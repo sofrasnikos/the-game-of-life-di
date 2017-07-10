@@ -28,5 +28,11 @@
 *.x86_64
 *.hex
 
-# Debug files
+# Debug files/directories
 *.dSYM/
+*Debug/
+
+# Eclipse project files
+*.cproject
+*.project
+*language.settings.xml
