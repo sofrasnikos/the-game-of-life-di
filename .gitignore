@@ -33,6 +33,10 @@
 *Debug/
 
 # Eclipse project files
+*/.settings
 *.cproject
 *.project
 *language.settings.xml
+
+#Output Directories
+*outputs/
