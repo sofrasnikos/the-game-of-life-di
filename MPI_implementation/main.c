@@ -29,23 +29,11 @@ int main(int argc, char *argv[]) {
 	int dir_stat = mkdir("../outputs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	//MPI_Status status;
 
-	/* Allocate grid*/
-	grid = malloc(sizeof(int *) * rows);
-	if (grid == NULL) {
-		printf("malloc error %s\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-	for (i = 0; i < rows; i++) {
-		grid[i] = malloc(sizeof(int) * columns);
-		if (grid[i] == NULL) {
-			printf("malloc error %s\n", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	}
-
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+	grid = CreateGrid(rows, columns);
 
 	/* Process with rank =0 initializes the grid*/
 	if (rank == 0) {
@@ -70,9 +58,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	MPI_Bcast(&grid[0][0], rows * columns, MPI_INT, 0, MPI_COMM_WORLD);
+
 	PrintGrid(grid, rows, columns, rank);
 
+	FreeGrid(grid, rows, columns);
+
 	MPI_Finalize();
-	/* Free grid*/
 	return 0;
 }
