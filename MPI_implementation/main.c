@@ -35,31 +35,16 @@ int main(int argc, char *argv[]) {
 
 	grid = CreateGrid(rows, columns);
 
-	/* Process with rank =0 initializes the grid*/
+	/* Process with rank == 0 initializes the grid*/
 	if (rank == 0) {
 		srand(time(NULL));
-		/* Allocate grid*/
-
-		int r;
-		/* Initialize the grid*/
-		for (i = 0; i < rows; i++) {
-			for (j = 0; j < columns; j++) {
-				/* Range from 1 to 100*/
-				r = rand() % 100 + 1;
-				/* 30% possibility to create a cell
-				 * 70% possibility to create empty space*/
-				if (r < 30) {
-					grid[i][j] = 1;
-				} else {
-					grid[i][j] = 0;
-				}
-			}
-		}
+		InitGrid(grid, rows, columns);
 	}
 
-	MPI_Bcast(&grid[0][0], rows * columns, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&(**grid), rows * columns, MPI_INT, 0, MPI_COMM_WORLD);
 
 	PrintGrid(grid, rows, columns, rank);
+	//MPI_Barrier(MPI_COMM_WORLD);
 
 	FreeGrid(grid, rows, columns);
 
