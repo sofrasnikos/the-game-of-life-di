@@ -13,31 +13,34 @@
 
 #include "functions.h"
 
-int** CreateGrid(int rows, int columns) {
-	int i;
-	int **grid;
-	/* Allocate grid*/
-	grid = malloc(sizeof(int *) * rows);
+int CreateGrid(int ***grid, int rows, int columns) {
+
+	/* allocate the n*m contiguous items */
+	int *p = (int *) malloc(rows * columns * sizeof(int));
+	if (!p)
+		return -1;
+
+	/* allocate the row pointers into the memory */
+	(*grid) = (int **) malloc(rows * sizeof(int*));
 	if (grid == NULL) {
+		free(grid);
 		printf("malloc error %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	for (i = 0; i < rows; i++) {
-		grid[i] = malloc(sizeof(int) * columns);
-		if (grid[i] == NULL) {
-			printf("malloc error %s\n", strerror(errno));
-			exit(EXIT_FAILURE);
-		}
-	}
-	return grid;
+
+	/* set up the pointers into the contiguous memory */
+	for (int i = 0; i < rows; i++)
+		(*grid)[i] = &(p[i * columns]);
+
+	return 0;
 }
 
-void FreeGrid(int **grid, int rows, int columns) {
-	int i;
-	for (i = 0; i < rows; i++) {
-		free(grid[i]);
-	}
-	free(grid);
+void FreeGrid(int ***grid) {
+	/* free the memory - the first element of the array is at the start */
+	free(&((*grid)[0][0]));
+
+	/* free the pointers into the memory */
+	free(*grid);
 }
 
 void InitGrid(int **grid, int rows, int columns) {
