@@ -85,3 +85,23 @@ void PrintGrid(int **grid, int rows, int columns, int rank) {
 	fclose(fd);
 	free(filename);
 }
+
+/* This works only for squares*/
+SplitAttributes ProcessNumber(int rows) {
+	SplitAttributes attributes;
+	int x, x_square, inner_number_of_squares, square_side_length;
+	int n_square = rows * rows;
+
+	for (x = 1; x <= MAX_SIDE_LENGTH_OF_SQUARES; x++) {
+		x_square = x * x;
+		//printf("x == %d, x_square == %d\n", x, x_square);
+		if (n_square % x_square == 0) {
+			inner_number_of_squares = n_square / x_square;
+			square_side_length = x;
+		}
+	}
+
+	attributes.length_of_sides = square_side_length;
+	attributes.number_of_processes = inner_number_of_squares;
+	return attributes;
+}

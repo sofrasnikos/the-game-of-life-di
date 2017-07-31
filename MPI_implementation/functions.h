@@ -8,9 +8,17 @@
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
+/* This struct is used to determine how many processes are needed
+ * and to pass the length of the inner squares sides*/
+typedef struct SplitAttributes {
+	int number_of_processes;
+	int length_of_sides;
+} SplitAttributes;
 int CreateGrid(int ***grid, int rows, int columns);
 void FreeGrid(int ***grid);
 void InitGrid(int **grid, int rows, int columns);
 void PrintGrid(int **grid, int rows, int columns, int rank);
+void PrintGrid(int **grid, int rows, int columns, int rank, int glob_grid);
+SplitAttributes ProcessNumber(int rows);
 
 #endif /* FUNCTIONS_H_ */
