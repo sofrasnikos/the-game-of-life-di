@@ -10,17 +10,20 @@
 #include <mpi.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include "functions.h"
 
-int CreateGrid(int ***grid, int rows, int columns) {
+#define MAX_SIDE_LENGTH_OF_SQUARES 40
 
-	/* allocate the n*m contiguous items */
+int CreateGrid(int ***grid, int rows, int columns) {
+	/* Contiguous memory allocation
+	 * Allocate rows * columns*/
 	int *p = (int *) malloc(rows * columns * sizeof(int));
 	if (!p)
 		return -1;
 
-	/* allocate the row pointers into the memory */
+	/* Allocate rows*/
 	(*grid) = (int **) malloc(rows * sizeof(int*));
 	if (grid == NULL) {
 		free(grid);
@@ -28,7 +31,7 @@ int CreateGrid(int ***grid, int rows, int columns) {
 		exit(EXIT_FAILURE);
 	}
 
-	/* set up the pointers into the contiguous memory */
+	/* Set up the pointers*/
 	for (int i = 0; i < rows; i++)
 		(*grid)[i] = &(p[i * columns]);
 
@@ -36,10 +39,7 @@ int CreateGrid(int ***grid, int rows, int columns) {
 }
 
 void FreeGrid(int ***grid) {
-	/* free the memory - the first element of the array is at the start */
 	free(&((*grid)[0][0]));
-
-	/* free the pointers into the memory */
 	free(*grid);
 }
 
@@ -61,15 +61,29 @@ void InitGrid(int **grid, int rows, int columns) {
 	}
 }
 
-void PrintGrid(int **grid, int rows, int columns, int rank) {
+void PrintGrid(int **grid, int rows, int columns, int rank, int glob_grid) {
+	int i, j;
 	char *filename = malloc(sizeof(char) * 256);
-	snprintf(filename, 256, "../outputs/process_%d", rank);
+	struct stat buffer;
+	int exist;
+	i = 0;
+	do {
+		if (glob_grid == 1) {
+			snprintf(filename, 256, "../outputs/grid_(%d)", i);
+		} else {
+			snprintf(filename, 256, "../outputs/process_%d_(%d)", rank, i);
+		}
+		exist = stat(filename, &buffer);
+		if (exist == 0) {
+			i++;
+		}
+	} while (exist == 0);
+
 	FILE *fd = fopen(filename, "w+");
 	if (!fd) {
 		printf("fopen failed\n");
 		exit(EXIT_FAILURE);
 	}
-	int i, j;
 	for (i = 0; i < rows; i++) {
 		for (j = 0; j < columns; j++) {
 			if (grid[i][j] == 1) {
