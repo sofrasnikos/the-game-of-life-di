@@ -15,10 +15,10 @@ typedef struct SplitAttributes {
 	int length_of_sides;
 } SplitAttributes;
 
-int CreateGrid(int ***grid, int rows, int columns);
+int CreateGrid(int ***grid, int dimension);
 void FreeGrid(int ***grid);
-void InitGrid(int **grid, int rows, int columns);
-void PrintGrid(int **grid, int rows, int columns, int rank, int glob_grid);
+void InitGrid(int **grid, int dimension);
+void PrintGrid(int **grid, int dimension, int rank, int glob_grid);
 SplitAttributes ProcessNumber(int rows);
 
 #endif /* FUNCTIONS_H_ */

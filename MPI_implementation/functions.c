@@ -16,15 +16,15 @@
 
 #define MAX_SIDE_LENGTH_OF_SQUARES 40
 
-int CreateGrid(int ***grid, int rows, int columns) {
+int CreateGrid(int ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
-	int *p = (int *) malloc(rows * columns * sizeof(int));
+	int *p = (int *) malloc(dimension * dimension * sizeof(int));
 	if (!p)
 		return -1;
 
 	/* Allocate rows*/
-	(*grid) = (int **) malloc(rows * sizeof(int*));
+	(*grid) = (int **) malloc(dimension * sizeof(int*));
 	if (grid == NULL) {
 		free(grid);
 		printf("malloc error %s\n", strerror(errno));
@@ -32,8 +32,8 @@ int CreateGrid(int ***grid, int rows, int columns) {
 	}
 
 	/* Set up the pointers*/
-	for (int i = 0; i < rows; i++)
-		(*grid)[i] = &(p[i * columns]);
+	for (int i = 0; i < dimension; i++)
+		(*grid)[i] = &(p[i * dimension]);
 
 	return 0;
 }
@@ -43,11 +43,11 @@ void FreeGrid(int ***grid) {
 	free(*grid);
 }
 
-void InitGrid(int **grid, int rows, int columns) {
+void InitGrid(int **grid, int dimension) {
 	int i, j, r;
 	/* Initialize the grid*/
-	for (i = 0; i < rows; i++) {
-		for (j = 0; j < columns; j++) {
+	for (i = 0; i < dimension; i++) {
+		for (j = 0; j < dimension; j++) {
 			/* Range from 1 to 100*/
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
@@ -61,7 +61,7 @@ void InitGrid(int **grid, int rows, int columns) {
 	}
 }
 
-void PrintGrid(int **grid, int rows, int columns, int rank, int glob_grid) {
+void PrintGrid(int **grid, int dimension, int rank, int glob_grid) {
 	int i, j;
 	char *filename = malloc(sizeof(char) * 256);
 	struct stat buffer;
@@ -84,8 +84,8 @@ void PrintGrid(int **grid, int rows, int columns, int rank, int glob_grid) {
 		printf("fopen failed\n");
 		exit(EXIT_FAILURE);
 	}
-	for (i = 0; i < rows; i++) {
-		for (j = 0; j < columns; j++) {
+	for (i = 0; i < dimension; i++) {
+		for (j = 0; j < dimension; j++) {
 			if (grid[i][j] == 1) {
 				//printf("*");
 				fprintf(fd, "*");
@@ -101,10 +101,10 @@ void PrintGrid(int **grid, int rows, int columns, int rank, int glob_grid) {
 }
 
 /* This works only for squares*/
-SplitAttributes ProcessNumber(int rows) {
+SplitAttributes ProcessNumber(int dimension) {
 	SplitAttributes attributes;
 	int x, x_square, inner_number_of_squares, square_side_length;
-	int n_square = rows * rows;
+	int n_square = dimension * dimension;
 
 	for (x = 1; x <= MAX_SIDE_LENGTH_OF_SQUARES; x++) {
 		x_square = x * x;
