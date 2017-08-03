@@ -37,11 +37,13 @@ int main(int argc, char *argv[]) {
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
 
 	if (num_of_proc != attributes.number_of_processes) {
-		printf(
-				"the given grid is %d x %d\nthe optimal number of processes is %d\n",
-				dimension, dimension, attributes.number_of_processes);
+		if (rank == 0) {
+			printf(
+					"the given grid is %d x %d\nthe optimal number of processes is %d\n",
+					dimension, dimension, attributes.number_of_processes);
+		}
 		MPI_Finalize();
-		exit(1);
+		exit(0);
 	}
 
 	/* Process with rank == 0 creates & initializes the grid*/
@@ -61,7 +63,8 @@ int main(int argc, char *argv[]) {
 
 	/* Create MPI_Datatypes*/
 	MPI_Datatype block_type_1, block_type_2;
-	MPI_Type_vector(block_dimension, block_dimension, dimension, MPI_INT, &block_type_2);
+	MPI_Type_vector(block_dimension, block_dimension, dimension, MPI_INT,
+			&block_type_2);
 	MPI_Type_create_resized(block_type_2, 0, sizeof(int), &block_type_1);
 	MPI_Type_commit(&block_type_1);
 
@@ -76,8 +79,8 @@ int main(int argc, char *argv[]) {
 	/* Scatter the grid*/
 	for (i = 0; i < proc_grid_dimension; i++) {
 		for (j = 0; j < proc_grid_dimension; j++) {
-			displs[i * proc_grid_dimension + j] = i * dimension * block_dimension
-					+ j * block_dimension;
+			displs[i * proc_grid_dimension + j] = i * dimension
+					* block_dimension + j * block_dimension;
 			sendcounts[i * proc_grid_dimension + j] = 1;
 		}
 	}
