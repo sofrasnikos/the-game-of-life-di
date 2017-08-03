@@ -31,7 +31,13 @@ int main(int argc, char *argv[]) {
 	/* The below values are used to split equally the grid
 	 * into blocks which will be assigned to processes */
 	int proc_grid_dimension = dimension / attributes.length_of_sides;
+	int periods[2], dim_size[2];
+	periods[0] = 1;
+	periods[1] = 1;
+	dim_size[0] = proc_grid_dimension;
+	dim_size[1] = proc_grid_dimension;
 
+	MPI_Comm comm;
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
@@ -45,6 +51,8 @@ int main(int argc, char *argv[]) {
 		MPI_Finalize();
 		exit(0);
 	}
+
+	MPI_Cart_create(MPI_COMM_WORLD, 2, dim_size, periods, 1, &comm);
 
 	/* Process with rank == 0 creates & initializes the grid*/
 	if (rank == 0) {
@@ -101,6 +109,43 @@ int main(int argc, char *argv[]) {
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 
+	int coords[2];
+	MPI_Cart_coords(comm, rank, 2, coords);
+	//printf("%d, %d %d\n", rank, coords[0], coords[1]);
+
+	/* Determine the neighbouring procceses*/
+	int top[2], bot[2], left[2], right[2], top_left[2], top_right[2], bot_left[2], bot_right[2];
+    top[0] = coords[0] - 1;
+    top[1] = coords[1];
+    bot[0] = coords[0] + 1;
+    bot[1] = coords[1];
+    left[0] = coords[0];
+    left[1] = coords[1] - 1;
+    right[0] = coords[0];
+    right[1] = coords[1] + 1;
+    top_left[0] = coords[0] - 1;
+    top_left[1] = coords[1] - 1;
+    top_right[0] = coords[0] - 1;
+    top_right[1] = coords[1] + 1;
+    bot_left[0] = coords[0] + 1;
+    bot_left[1] = coords[1] - 1;
+    bot_right[0] = coords[0] + 1;
+    bot_right[1] = coords[1] + 1;
+
+    int top_rank, bot_rank, left_rank, right_rank, top_left_rank, top_right_rank, bot_left_rank, bot_right_rank;
+    MPI_Cart_rank(comm, top, &top_rank);
+    MPI_Cart_rank(comm, bot, &bot_rank);
+    MPI_Cart_rank(comm, left, &left_rank);
+    MPI_Cart_rank(comm, right, &right_rank);
+    MPI_Cart_rank(comm, top_left, &top_left_rank);
+    MPI_Cart_rank(comm, top_right, &top_right_rank);
+    MPI_Cart_rank(comm, bot_left, &bot_left_rank);
+    MPI_Cart_rank(comm, bot_right, &bot_right_rank);
+    if(rank == 0){
+        printf("%d %d %d %d %d %d %d %d\n", top_rank, bot_rank, left_rank, right_rank, top_left_rank, top_right_rank, bot_left_rank, bot_right_rank);
+    }
+
+    //MPI_Send(&number, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
 	/* Gather all processed blocks to process 0 */
 	MPI_Gatherv(&(local_grid[0][0]), block_dimension * block_dimension, MPI_INT,
 			ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
