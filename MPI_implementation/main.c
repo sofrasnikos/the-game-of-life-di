@@ -114,38 +114,59 @@ int main(int argc, char *argv[]) {
 	//printf("%d, %d %d\n", rank, coords[0], coords[1]);
 
 	/* Determine the neighbouring procceses*/
-	int top[2], bot[2], left[2], right[2], top_left[2], top_right[2], bot_left[2], bot_right[2];
-    top[0] = coords[0] - 1;
-    top[1] = coords[1];
-    bot[0] = coords[0] + 1;
-    bot[1] = coords[1];
-    left[0] = coords[0];
-    left[1] = coords[1] - 1;
-    right[0] = coords[0];
-    right[1] = coords[1] + 1;
-    top_left[0] = coords[0] - 1;
-    top_left[1] = coords[1] - 1;
-    top_right[0] = coords[0] - 1;
-    top_right[1] = coords[1] + 1;
-    bot_left[0] = coords[0] + 1;
-    bot_left[1] = coords[1] - 1;
-    bot_right[0] = coords[0] + 1;
-    bot_right[1] = coords[1] + 1;
+	int top[2], bot[2], left[2], right[2], top_left[2], top_right[2],
+			bot_left[2], bot_right[2];
+	top[0] = coords[0] - 1;
+	top[1] = coords[1];
+	bot[0] = coords[0] + 1;
+	bot[1] = coords[1];
+	left[0] = coords[0];
+	left[1] = coords[1] - 1;
+	right[0] = coords[0];
+	right[1] = coords[1] + 1;
+	top_left[0] = coords[0] - 1;
+	top_left[1] = coords[1] - 1;
+	top_right[0] = coords[0] - 1;
+	top_right[1] = coords[1] + 1;
+	bot_left[0] = coords[0] + 1;
+	bot_left[1] = coords[1] - 1;
+	bot_right[0] = coords[0] + 1;
+	bot_right[1] = coords[1] + 1;
 
-    int top_rank, bot_rank, left_rank, right_rank, top_left_rank, top_right_rank, bot_left_rank, bot_right_rank;
-    MPI_Cart_rank(comm, top, &top_rank);
-    MPI_Cart_rank(comm, bot, &bot_rank);
-    MPI_Cart_rank(comm, left, &left_rank);
-    MPI_Cart_rank(comm, right, &right_rank);
-    MPI_Cart_rank(comm, top_left, &top_left_rank);
-    MPI_Cart_rank(comm, top_right, &top_right_rank);
-    MPI_Cart_rank(comm, bot_left, &bot_left_rank);
-    MPI_Cart_rank(comm, bot_right, &bot_right_rank);
-    if(rank == 0){
-        printf("%d %d %d %d %d %d %d %d\n", top_rank, bot_rank, left_rank, right_rank, top_left_rank, top_right_rank, bot_left_rank, bot_right_rank);
-    }
+	int top_rank, bot_rank, left_rank, right_rank, top_left_rank,
+			top_right_rank, bot_left_rank, bot_right_rank;
+	MPI_Cart_rank(comm, top, &top_rank);
+	MPI_Cart_rank(comm, bot, &bot_rank);
+	MPI_Cart_rank(comm, left, &left_rank);
+	MPI_Cart_rank(comm, right, &right_rank);
+	MPI_Cart_rank(comm, top_left, &top_left_rank);
+	MPI_Cart_rank(comm, top_right, &top_right_rank);
+	MPI_Cart_rank(comm, bot_left, &bot_left_rank);
+	MPI_Cart_rank(comm, bot_right, &bot_right_rank);
+	if (rank == 0) {
+		printf("%d %d %d %d %d %d %d %d\n", top_rank, bot_rank, left_rank,
+				right_rank, top_left_rank, top_right_rank, bot_left_rank,
+				bot_right_rank);
+	}
 
-    //MPI_Send(&number, 1, MPI_INT, 1, 0, MPI_COMM_WORLD);
+	MPI_Status status;
+	MPI_Request request;
+	int buff[40];
+	MPI_Isend(&local_grid[0][0], 40, MPI_INT, top_rank, 0, MPI_COMM_WORLD,
+			&request);
+	MPI_Recv(&buff, 40, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
+	if (rank == 6) {
+		printf("I am rank %d. My buff from bot (%d) == ", rank, bot_rank);
+		for (i = 0; i < 40; i++) {
+			if (buff[i] == 1) {
+				printf("*");
+			} else {
+				printf(".");
+			}
+		}
+		printf("\n");
+	}
+
 	/* Gather all processed blocks to process 0 */
 	MPI_Gatherv(&(local_grid[0][0]), block_dimension * block_dimension, MPI_INT,
 			ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
