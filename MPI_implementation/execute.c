@@ -144,21 +144,99 @@ int Execute(int rank, int num_of_proc, int dimension,
 
 	MPI_Status status;
 	MPI_Request request;
-	int buff[40];
-	MPI_Isend(&local_grid[0][0], 40, MPI_INT, top_rank, 0, MPI_COMM_WORLD,
+	int line_size = 40; // TODO prepei na yparxei allh metavlhth pou na exei auth thn timh, pros to paron vazw karfwta to 40
+	int top_buff[line_size], bot_buff[line_size], left_buff[line_size], right_buff[line_size];
+	int top_left_value, top_right_value, bot_left_value, bot_right_value;
+	// Send to all eight neighbors
+	MPI_Isend(&local_grid[0][0], line_size, MPI_INT, top_rank, 0, MPI_COMM_WORLD,
 			&request);
-	MPI_Recv(&buff, 40, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
-	if (rank == 6) {
-		printf("I am rank %d. My buff from bot (%d) == ", rank, bot_rank);
-		for (i = 0; i < 40; i++) {
-			if (buff[i] == 1) {
+	MPI_Isend(&local_grid[line_size - 1][0], line_size, MPI_INT, bot_rank, 0, MPI_COMM_WORLD,
+				&request);
+	int temp_left_buff[line_size], temp_right_buff[line_size];
+	// Left and right are special cases because we have to create a buffer since the values are in a column
+	for (i = 0; i < line_size; i++) {
+		temp_left_buff[i] = local_grid[i][0];
+		temp_right_buff[i] = local_grid[i][line_size - 1];
+	}
+	MPI_Isend(temp_left_buff, line_size, MPI_INT, left_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Isend(temp_right_buff, line_size, MPI_INT, right_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Isend(&local_grid[0][line_size - 1], 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Isend(&local_grid[line_size - 1][0], 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Isend(&local_grid[line_size - 1][line_size - 1], 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &request);
+		
+	// Calculate the middle cells while waiting to receive from neighbors
+	// ...
+	// Receive from every neighbor
+	MPI_Recv(&bot_buff, line_size, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&top_buff, line_size, MPI_INT, top_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&right_buff, line_size, MPI_INT, right_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&left_buff, line_size, MPI_INT, left_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&top_right_value, 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &status);
+	MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &status);
+	if (rank == 6) { // TODO na fugei olo to if molis tsekareis oti doulevei swsta
+		printf("I am rank %d. Received from bot (%d):", rank, bot_rank);
+		for (i = 0; i < line_size; i++) {
+			if (bot_buff[i] == 1) {
 				printf("*");
 			} else {
 				printf(".");
 			}
 		}
 		printf("\n");
+		printf("I am rank %d. Received from top (%d):", rank, top_rank);
+		for (i = 0; i < line_size; i++) {
+			if (top_buff[i] == 1) {
+				printf("*");
+			} else {
+				printf(".");
+			}
+		}
+		printf("\n");
+		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
+		for (i = 0; i < line_size; i++) {
+			if (right_buff[i] == 1) {
+				printf("*\n");
+			} else {
+				printf(".\n");
+			}
+		}
+		printf("I am rank %d. Received from left (%d):\n", rank, left_rank);
+		for (i = 0; i < line_size; i++) {
+			if (left_buff[i] == 1) {
+				printf("*\n");
+			} else {
+				printf(".\n");
+			}
+		}
+		printf("I am rank %d. Received from bot right(%d):", rank, bot_right_rank);
+		if (bot_right_value == 1) {
+			printf("*\n");
+		} else {
+			printf(".\n");
+		}
+		printf("I am rank %d. Received from bot left(%d):", rank, bot_left_rank);
+		if (bot_left_value == 1) {
+			printf("*\n");
+		} else {
+			printf(".\n");
+		}
+		printf("I am rank %d. Received from top right(%d):", rank, top_right_rank);
+		if (top_right_value == 1) {
+			printf("*\n");
+		} else {
+			printf(".\n");
+		}
+		printf("I am rank %d. Received from top left(%d):", rank, top_left_rank);
+		if (top_left_value == 1) {
+			printf("*\n");
+		} else {
+			printf(".\n");
+		}
 	}
+	// Calculate edge cells
 
 	/* Gather all processed blocks to process 0 */
 	MPI_Gatherv(&(local_grid[0][0]), block_dimension * block_dimension, MPI_INT,
