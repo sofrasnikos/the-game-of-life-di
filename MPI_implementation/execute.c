@@ -144,7 +144,9 @@ int Execute(int rank, int num_of_proc, int dimension,
 
 	MPI_Status status;
 	MPI_Request request;
-	int line_size = 40; // TODO prepei na yparxei allh metavlhth pou na exei auth thn timh, pros to paron vazw karfwta to 40
+	//todo isws na mhn uparxei logos na einai 2 metavlhtes me thn idia timh
+	// to exw proswrina etsi na mhn trwei seg fault se alles diastaseis grid
+	int line_size = block_dimension;
 	int top_buff[line_size], bot_buff[line_size], left_buff[line_size], right_buff[line_size];
 	int top_left_value, top_right_value, bot_left_value, bot_right_value;
 	// Send to all eight neighbors
