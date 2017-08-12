@@ -144,34 +144,32 @@ int Execute(int rank, int num_of_proc, int dimension,
 
 	MPI_Status status;
 	MPI_Request request;
-	//todo isws na mhn uparxei logos na einai 2 metavlhtes me thn idia timh
-	// to exw proswrina etsi na mhn trwei seg fault se alles diastaseis grid
-	int line_size = block_dimension;
-	int top_buff[line_size], bot_buff[line_size], left_buff[line_size],
-			right_buff[line_size];
+
+	int top_buff[block_dimension], bot_buff[block_dimension], left_buff[block_dimension],
+			right_buff[block_dimension];
 	int top_left_value, top_right_value, bot_left_value, bot_right_value;
 	// Send to all eight neighbors
-	MPI_Isend(&local_grid[0][0], line_size, MPI_INT, top_rank, 0,
+	MPI_Isend(&local_grid[0][0], block_dimension, MPI_INT, top_rank, 0,
 	MPI_COMM_WORLD, &request);
-	MPI_Isend(&local_grid[line_size - 1][0], line_size, MPI_INT, bot_rank, 0,
+	MPI_Isend(&local_grid[block_dimension - 1][0], block_dimension, MPI_INT, bot_rank, 0,
 	MPI_COMM_WORLD, &request);
-	int temp_left_buff[line_size], temp_right_buff[line_size];
+	int temp_left_buff[block_dimension], temp_right_buff[block_dimension];
 	// Left and right are special cases because we have to create a buffer since the values are in a column
-	for (i = 0; i < line_size; i++) {
+	for (i = 0; i < block_dimension; i++) {
 		temp_left_buff[i] = local_grid[i][0];
-		temp_right_buff[i] = local_grid[i][line_size - 1];
+		temp_right_buff[i] = local_grid[i][block_dimension - 1];
 	}
-	MPI_Isend(temp_left_buff, line_size, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
+	MPI_Isend(temp_left_buff, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
 			&request);
-	MPI_Isend(temp_right_buff, line_size, MPI_INT, right_rank, 0,
+	MPI_Isend(temp_right_buff, block_dimension, MPI_INT, right_rank, 0,
 	MPI_COMM_WORLD, &request);
 	MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD,
 			&request);
-	MPI_Isend(&local_grid[0][line_size - 1], 1, MPI_INT, top_right_rank, 0,
+	MPI_Isend(&local_grid[0][block_dimension - 1], 1, MPI_INT, top_right_rank, 0,
 	MPI_COMM_WORLD, &request);
-	MPI_Isend(&local_grid[line_size - 1][0], 1, MPI_INT, bot_left_rank, 0,
+	MPI_Isend(&local_grid[block_dimension - 1][0], 1, MPI_INT, bot_left_rank, 0,
 	MPI_COMM_WORLD, &request);
-	MPI_Isend(&local_grid[line_size - 1][line_size - 1], 1, MPI_INT,
+	MPI_Isend(&local_grid[block_dimension - 1][block_dimension - 1], 1, MPI_INT,
 			bot_right_rank, 0, MPI_COMM_WORLD, &request);
 
 	// Calculate the middle cells while waiting to receive from neighbors
@@ -217,13 +215,13 @@ int Execute(int rank, int num_of_proc, int dimension,
 	}
 
 // Receive from every neighbor
-	MPI_Recv(&bot_buff, line_size, MPI_INT, bot_rank, 0, MPI_COMM_WORLD,
+	MPI_Recv(&bot_buff, block_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD,
 			&status);
-	MPI_Recv(&top_buff, line_size, MPI_INT, top_rank, 0, MPI_COMM_WORLD,
+	MPI_Recv(&top_buff, block_dimension, MPI_INT, top_rank, 0, MPI_COMM_WORLD,
 			&status);
-	MPI_Recv(&right_buff, line_size, MPI_INT, right_rank, 0, MPI_COMM_WORLD,
+	MPI_Recv(&right_buff, block_dimension, MPI_INT, right_rank, 0, MPI_COMM_WORLD,
 			&status);
-	MPI_Recv(&left_buff, line_size, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
+	MPI_Recv(&left_buff, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
 			&status);
 	MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD,
 			&status);
@@ -235,7 +233,7 @@ int Execute(int rank, int num_of_proc, int dimension,
 			&status);
 	if (rank == 6) { // TODO na fugei olo to if molis tsekareis oti doulevei swsta
 		printf("I am rank %d. Received from bot (%d):", rank, bot_rank);
-		for (i = 0; i < line_size; i++) {
+		for (i = 0; i < block_dimension; i++) {
 			if (bot_buff[i] == 1) {
 				printf("*");
 			} else {
@@ -244,7 +242,7 @@ int Execute(int rank, int num_of_proc, int dimension,
 		}
 		printf("\n");
 		printf("I am rank %d. Received from top (%d):", rank, top_rank);
-		for (i = 0; i < line_size; i++) {
+		for (i = 0; i < block_dimension; i++) {
 			if (top_buff[i] == 1) {
 				printf("*");
 			} else {
@@ -253,7 +251,7 @@ int Execute(int rank, int num_of_proc, int dimension,
 		}
 		printf("\n");
 		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
-		for (i = 0; i < line_size; i++) {
+		for (i = 0; i < block_dimension; i++) {
 			if (right_buff[i] == 1) {
 				printf("*\n");
 			} else {
@@ -261,7 +259,7 @@ int Execute(int rank, int num_of_proc, int dimension,
 			}
 		}
 		printf("I am rank %d. Received from left (%d):\n", rank, left_rank);
-		for (i = 0; i < line_size; i++) {
+		for (i = 0; i < block_dimension; i++) {
 			if (left_buff[i] == 1) {
 				printf("*\n");
 			} else {
