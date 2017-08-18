@@ -184,54 +184,7 @@ int Execute(int rank, int num_of_proc, int dimension,
 			bot_right_rank, 0, MPI_COMM_WORLD, &request);
 
 	// Calculate the middle cells while waiting to receive from neighbors
-
-	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
-	/* Ignore the first row (i == 0) and the last row (i == block_dimension - 1) */
-	int alive_neighbors;
-	for (i = 1; i < block_dimension - 1; i++) {
-		/* Ignore the first column (j == 0) and the last column (j == block_dimension - 1) */
-		for (j = 1; j < block_dimension - 1; j++) {
-			alive_neighbors = 0;
-			/* Calculate the value of the current cell according to its neighbors */
-			/* Top left neighbor */
-			alive_neighbors += local_grid[i - 1][j - 1];
-			/* Top neighbor */
-			alive_neighbors += local_grid[i - 1][j];
-			/* Top right neighbor */
-			alive_neighbors += local_grid[i - 1][j + 1];
-			/* Right neighbor */
-			alive_neighbors += local_grid[i][j + 1];
-			/* Bot right neighbor */
-			alive_neighbors += local_grid[i + 1][j + 1];
-			/* Bot neighbor */
-			alive_neighbors += local_grid[i + 1][j];
-			/* Bot left neighbor */
-			alive_neighbors += local_grid[i + 1][j - 1];
-			/* Left neighbor */
-			alive_neighbors += local_grid[i][j - 1];
-
-			/* If it is empty space */
-			if (local_grid[i][j] == 0) {
-				/* If there are exact 3 neighbors create a new cell */
-				if (alive_neighbors == 3) {
-					next_local_grid[i][j] = 1;
-				}
-			}
-			/* If already lives a cell */
-			else {
-				/* Determine if the cell lives or dies in next round */
-				/* Store the new value to the next_local_grid */
-				/* DIE */
-				if (alive_neighbors < 2 || alive_neighbors > 3) {
-					next_local_grid[i][j] = 0;
-				}
-				/* LIVE */
-				else {
-					next_local_grid[i][j] = 1;
-				}
-			}
-		}
-	}
+	CalculateInnerCells(block_dimension, local_grid, next_local_grid);
 
 	if (rank == 0) {
 		PrintGrid(next_local_grid, block_dimension, rank, 0);
@@ -253,8 +206,6 @@ int Execute(int rank, int num_of_proc, int dimension,
 			&status);
 	MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD,
 			&status);
-
-	MPI_Barrier(MPI_COMM_WORLD);
 
 	if (rank == 6) { // TODO na fugei olo to if molis tsekareis oti doulevei swsta
 		printf("I am rank %d. Received from bot (%d):", rank, bot_rank);
@@ -322,9 +273,102 @@ int Execute(int rank, int num_of_proc, int dimension,
 	}
 
 	// Calculate edge cells
+	CalculateEdgeCells(block_dimension, local_grid, next_local_grid, top_buff,
+			right_buff, bot_buff, left_buff, top_left_value, top_right_value,
+			bot_left_value, bot_right_value);
+
+	//todo erase
+	//print grids gia dieukolunhsh sto debugging
+	for (p = 0; p < num_of_proc; p++) {
+		if (rank == p) {
+			PrintGrid(next_local_grid, block_dimension, rank, 0);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
+
+	/* Gather all processed blocks to process 0 */
+	MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension,
+	MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0,
+	MPI_COMM_WORLD);
+
+	/* Free local grids */
+	FreeGrid(&local_grid);
+	FreeGrid(&next_local_grid);
+	MPI_Type_free(&block_type_1);
+	MPI_Type_free(&block_type_2);
+
+	if (rank == 0) {
+		PrintGrid(grid, dimension, rank, 1);
+	}
+	/* Free grid */
+	if (rank == 0) {
+		FreeGrid(&grid);
+	}
+
+	return 0;
+}
+
+void CalculateInnerCells(int block_dimension, int **local_grid,
+		int **next_local_grid) {
+	int i, j;
+	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
+	/* Ignore the first row (i == 0) and the last row (i == block_dimension - 1) */
+	int alive_neighbors;
+	for (i = 1; i < block_dimension - 1; i++) {
+		/* Ignore the first column (j == 0) and the last column (j == block_dimension - 1) */
+		for (j = 1; j < block_dimension - 1; j++) {
+			alive_neighbors = 0;
+			/* Calculate the value of the current cell according to its neighbors */
+			/* Top left neighbor */
+			alive_neighbors += local_grid[i - 1][j - 1];
+			/* Top neighbor */
+			alive_neighbors += local_grid[i - 1][j];
+			/* Top right neighbor */
+			alive_neighbors += local_grid[i - 1][j + 1];
+			/* Right neighbor */
+			alive_neighbors += local_grid[i][j + 1];
+			/* Bot right neighbor */
+			alive_neighbors += local_grid[i + 1][j + 1];
+			/* Bot neighbor */
+			alive_neighbors += local_grid[i + 1][j];
+			/* Bot left neighbor */
+			alive_neighbors += local_grid[i + 1][j - 1];
+			/* Left neighbor */
+			alive_neighbors += local_grid[i][j - 1];
+
+			/* If it is empty space */
+			if (local_grid[i][j] == 0) {
+				/* If there are exact 3 neighbors create a new cell */
+				if (alive_neighbors == 3) {
+					next_local_grid[i][j] = 1;
+				}
+			}
+			/* If already lives a cell */
+			else {
+				/* Determine if the cell lives or dies in next round */
+				/* Store the new value to the next_local_grid */
+				/* DIE */
+				if (alive_neighbors < 2 || alive_neighbors > 3) {
+					next_local_grid[i][j] = 0;
+				}
+				/* LIVE */
+				else {
+					next_local_grid[i][j] = 1;
+				}
+			}
+		}
+	}
+}
+
+void CalculateEdgeCells(int block_dimension, int **local_grid,
+		int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff,
+		int *left_buff, int top_left_value, int top_right_value,
+		int bot_left_value, int bot_right_value) {
+	int i, j;
+
 	for (i = 0; i < block_dimension; i++) {
 		for (j = 0; j < block_dimension; j++) {
-			alive_neighbors = 0;
+			int alive_neighbors = 0;
 			int modify_cell_value = 0;
 			/* Iterate all columns in the first & last row */
 			if (i == 0 || i == (block_dimension - 1)) {
@@ -532,32 +576,4 @@ int Execute(int rank, int num_of_proc, int dimension,
 			}
 		}
 	}
-
-	for (p = 0; p < num_of_proc; p++) {
-		if (rank == p) {
-			PrintGrid(next_local_grid, block_dimension, rank, 0);
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-
-	/* Gather all processed blocks to process 0 */
-	MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension,
-	MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0,
-	MPI_COMM_WORLD);
-
-	/* Free local grids */
-	FreeGrid(&local_grid);
-	FreeGrid(&next_local_grid);
-	MPI_Type_free(&block_type_1);
-	MPI_Type_free(&block_type_2);
-
-	if (rank == 0) {
-		PrintGrid(grid, dimension, rank, 1);
-	}
-	/* Free grid */
-	if (rank == 0) {
-		FreeGrid(&grid);
-	}
-
-	return 0;
 }
