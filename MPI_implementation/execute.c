@@ -286,17 +286,17 @@ int Execute(int rank, int num_of_proc, int dimension,
 		}
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
-//	CalculateEdgeCellsOpt(block_dimension, local_grid, next_local_grid, top_buff,
-//				right_buff, bot_buff, left_buff, top_left_value, top_right_value,
-//				bot_left_value, bot_right_value);
-//	//todo erase
-//	//print grids gia dieukolunhsh sto debugging
-//	for (p = 0; p < num_of_proc; p++) {
-//		if (rank == p) {
-//			PrintGrid(next_local_grid, block_dimension, rank, 0);
-//		}
-//		MPI_Barrier(MPI_COMM_WORLD);
-//	}
+	CalculateEdgeCellsOpt(block_dimension, local_grid, next_local_grid, top_buff,
+				right_buff, bot_buff, left_buff, top_left_value, top_right_value,
+				bot_left_value, bot_right_value);
+	//todo erase
+	//print grids gia dieukolunhsh sto debugging
+	for (p = 0; p < num_of_proc; p++) {
+		if (rank == p) {
+			PrintGrid(next_local_grid, block_dimension, rank, 0);
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
 	/* Gather all processed blocks to process 0 */
 	MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension,
@@ -594,34 +594,34 @@ void CalculateEdgeCellsOpt(int block_dimension, int **local_grid,
 		int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff,
 		int *left_buff, int top_left_value, int top_right_value,
 		int bot_left_value, int bot_right_value) {
-	int i, j;
-	
-	for (i = 1; i < block_dimension - 1; i++) {
-		/* Top row without the "corner cells" */
-		int alive_neighbors = 0;
+	int k;
+	int alive_neighbors = 0;
+	for (k = 1; k < block_dimension - 1; k++) {
+		/* TOP ROW */
+		alive_neighbors = 0;
 		/* Calculate the value of the current cell according to its neighbors */
 		/* Top left neighbor (the value is borrowed by other process) */
-		alive_neighbors += top_buff[i - 1];
+		alive_neighbors += top_buff[k - 1];
 		/* Top neighbor (the value is borrowed by other process) */
-		alive_neighbors += top_buff[i];
+		alive_neighbors += top_buff[k];
 		/* Top right neighbor (the value is borrowed by other process) */
-		alive_neighbors += top_buff[i + 1];
+		alive_neighbors += top_buff[k + 1];
 		/* Right neighbor */
-		alive_neighbors += local_grid[0][i + 1];
+		alive_neighbors += local_grid[0][k + 1];
 		/* Bot right neighbor */
-		alive_neighbors += local_grid[1][i + 1];
+		alive_neighbors += local_grid[1][k + 1];
 		/* Bot neighbor */
-		alive_neighbors += local_grid[1][i];
+		alive_neighbors += local_grid[1][k];
 		/* Bot left neighbor */
-		alive_neighbors += local_grid[1][i - 1];
+		alive_neighbors += local_grid[1][k - 1];
 		/* Left neighbor */
-		alive_neighbors += local_grid[0][i - 1];
-		
+		alive_neighbors += local_grid[0][k - 1];
+
 		/* If it is empty space */
-		if (local_grid[0][i] == 0) {
+		if (local_grid[0][k] == 0) {
 			/* If there are exact 3 neighbors create a new cell */
 			if (alive_neighbors == 3) {
-				next_local_grid[0][i] = 1;
+				next_local_grid[0][k] = 1;
 			}
 		}
 		/* If already lives a cell */
@@ -630,12 +630,292 @@ void CalculateEdgeCellsOpt(int block_dimension, int **local_grid,
 			/* Store the new value to the next_local_grid */
 			/* DIE */
 			if (alive_neighbors < 2 || alive_neighbors > 3) {
-				next_local_grid[0][i] = 0;
+				next_local_grid[0][k] = 0;
 			}
 			/* LIVE */
 			else {
-				next_local_grid[0][i] = 1;
+				next_local_grid[0][k] = 1;
 			}
+		}
+		/* BOT ROW */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += bot_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += bot_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += bot_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[block_dimension - 1][k + 1];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[block_dimension - 2][k + 1];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[block_dimension - 2][k];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[block_dimension - 2][k - 1];
+		/* Left neighbor */
+		alive_neighbors += local_grid[block_dimension - 1][k - 1];
+		
+		/* If it is empty space */
+		if (local_grid[block_dimension - 1][k] == 0) {
+			/* If there are exact 3 neighbors create a new cell */
+			if (alive_neighbors == 3) {
+				next_local_grid[block_dimension - 1][k] = 1;
+			}
+		}
+		/* If already lives a cell */
+		else {
+			/* Determine if the cell lives or dies in next round */
+			/* Store the new value to the next_local_grid */
+			/* DIE */
+			if (alive_neighbors < 2 || alive_neighbors > 3) {
+				next_local_grid[block_dimension - 1][k] = 0;
+			}
+			/* LIVE */
+			else {
+				next_local_grid[block_dimension - 1][k] = 1;
+			}
+		}
+		/* LEFT COLUMN */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += left_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += left_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += left_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[k + 1][0];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[k + 1][1];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[k][1];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[k - 1][1];
+		/* Left neighbor */
+		alive_neighbors += local_grid[k - 1][0];
+
+		/* If it is empty space */
+		if (local_grid[k][0] == 0) {
+			/* If there are exact 3 neighbors create a new cell */
+			if (alive_neighbors == 3) {
+				next_local_grid[k][0] = 1;
+			}
+		}
+		/* If already lives a cell */
+		else {
+			/* Determine if the cell lives or dies in next round */
+			/* Store the new value to the next_local_grid */
+			/* DIE */
+			if (alive_neighbors < 2 || alive_neighbors > 3) {
+				next_local_grid[k][0] = 0;
+			}
+			/* LIVE */
+			else {
+				next_local_grid[k][0] = 1;
+			}
+		}
+		/* RIGHT COLUMN */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += right_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += right_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += right_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[k + 1][block_dimension - 1];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[k + 1][block_dimension - 2];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[k][block_dimension - 2];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[k - 1][block_dimension - 2];
+		/* Left neighbor */
+		alive_neighbors += local_grid[k - 1][block_dimension - 1];
+
+		/* If it is empty space */
+		if (local_grid[k][block_dimension - 1] == 0) {
+			/* If there are exact 3 neighbors create a new cell */
+			if (alive_neighbors == 3) {
+				next_local_grid[k][block_dimension - 1] = 1;
+			}
+		}
+		/* If already lives a cell */
+		else {
+			/* Determine if the cell lives or dies in next round */
+			/* Store the new value to the next_local_grid */
+			/* DIE */
+			if (alive_neighbors < 2 || alive_neighbors > 3) {
+				next_local_grid[k][block_dimension - 1] = 0;
+			}
+			/* LIVE */
+			else {
+				next_local_grid[k][block_dimension - 1] = 1;
+			}
+		}
+	}
+	/* TOP LEFT CELL */
+	alive_neighbors = 0;
+	/* Calculate the value of the current cell according to its neighbors */
+	/* Top left neighbor (the value is borrowed by other process) */
+	alive_neighbors += top_left_value;
+	/* Top neighbor (the value is borrowed by other process) */
+	alive_neighbors += top_buff[0];
+	/* Top right neighbor (the value is borrowed by other process) */
+	alive_neighbors += top_buff[1];
+	/* Right neighbor */
+	alive_neighbors += local_grid[0][1];
+	/* Bot right neighbor */
+	alive_neighbors += local_grid[1][1];
+	/* Bot neighbor */
+	alive_neighbors += local_grid[1][0];
+	/* Bot left neighbor (the value is borrowed by other process) */
+	alive_neighbors += left_buff[1];
+	/* Left neighbor (the value is borrowed by other process) */
+	alive_neighbors += left_buff[0];
+
+	/* If it is empty space */
+	if (local_grid[0][0] == 0) {
+		/* If there are exact 3 neighbors create a new cell */
+		if (alive_neighbors == 3) {
+			next_local_grid[0][0] = 1;
+		}
+	}
+	/* If already lives a cell */
+	else {
+		/* Determine if the cell lives or dies in next round */
+		/* Store the new value to the next_local_grid */
+		/* DIE */
+		if (alive_neighbors < 2 || alive_neighbors > 3) {
+			next_local_grid[0][0] = 0;
+		}
+		/* LIVE */
+		else {
+			next_local_grid[0][0] = 1;
+		}
+	}
+
+	/* TOP RIGHT CELL */
+	alive_neighbors = 0;
+	/* Calculate the value of the current cell according to its neighbors */
+	/* Top left neighbor (the value is borrowed by other process) */
+	alive_neighbors += top_buff[block_dimension - 2];
+	/* Top neighbor (the value is borrowed by other process) */
+	alive_neighbors += top_buff[block_dimension - 1];
+	/* Top right neighbor (the value is borrowed by other process) */
+	alive_neighbors += top_right_value;
+	/* Right neighbor (the value is borrowed by other process) */
+	alive_neighbors += right_buff[0];
+	/* Bot right neighbor (the value is borrowed by other process) */
+	alive_neighbors += right_buff[1];
+	/* Bot neighbor */
+	alive_neighbors += local_grid[1][block_dimension - 1];
+	/* Bot left neighbor */
+	alive_neighbors += local_grid[1][block_dimension - 2];
+	/* Left neighbor */
+	alive_neighbors += local_grid[0][block_dimension - 2]; /* edw exei allagh */
+	/* If it is empty space */
+	if (local_grid[0][block_dimension - 1] == 0) {
+		/* If there are exact 3 neighbors create a new cell */
+		if (alive_neighbors == 3) {
+			next_local_grid[0][block_dimension - 1] = 1;
+		}
+	}
+	/* If already lives a cell */
+	else {
+		/* Determine if the cell lives or dies in next round */
+		/* Store the new value to the next_local_grid */
+		/* DIE */
+		if (alive_neighbors < 2 || alive_neighbors > 3) {
+			next_local_grid[0][block_dimension - 1] = 0;
+		}
+		/* LIVE */
+		else {
+			next_local_grid[0][block_dimension - 1] = 1;
+		}
+	}
+	/* BOTTOM RIGHT CELL */
+	alive_neighbors = 0;
+	/* Bot right cell
+	 * (this is special case, to calculate next round we need bot_right_value) */
+	/* Calculate the value of the current cell according to its neighbors */
+	/* Top left neighbor */
+	alive_neighbors += local_grid[block_dimension - 2][block_dimension - 2];
+	/* Top neighbor */
+	alive_neighbors += local_grid[block_dimension - 2][block_dimension - 1];
+	/* Top right neighbor (the value is borrowed by other process) */
+	alive_neighbors += right_buff[block_dimension - 2];
+	/* Right neighbor (the value is borrowed by other process) */
+	alive_neighbors += right_buff[block_dimension - 1];
+	/* Bot right neighbor (the value is borrowed by other process) */
+	alive_neighbors += bot_right_value;
+	/* Bot neighbor (the value is borrowed by other process) */
+	alive_neighbors += bot_buff[block_dimension - 1];
+	/* Bot left neighbor (the value is borrowed by other process) */
+	alive_neighbors += bot_buff[block_dimension - 2];
+	/* Left neighbor */
+	alive_neighbors += local_grid[block_dimension - 1][block_dimension - 2];
+	/* If it is empty space */
+	if (local_grid[block_dimension - 1][block_dimension - 1] == 0) {
+		/* If there are exact 3 neighbors create a new cell */
+		if (alive_neighbors == 3) {
+			next_local_grid[block_dimension - 1][block_dimension - 1] = 1;
+		}
+	}
+	/* If already lives a cell */
+	else {
+		/* Determine if the cell lives or dies in next round */
+		/* Store the new value to the next_local_grid */
+		/* DIE */
+		if (alive_neighbors < 2 || alive_neighbors > 3) {
+			next_local_grid[block_dimension - 1][block_dimension - 1] = 0;
+		}
+		/* LIVE */
+		else {
+			next_local_grid[block_dimension - 1][block_dimension - 1] = 1;
+		}
+	}
+	/* BOTTOM LEFT CELL */
+	alive_neighbors = 0;
+	/* Calculate the value of the current cell according to its neighbors */
+	/* Top left neighbor (the value is borrowed by other process) */
+	alive_neighbors += left_buff[block_dimension - 2]; /* edw exei allagh */
+	/* Top neighbor */
+	alive_neighbors += local_grid[block_dimension - 2][0];
+	/* Top right neighbor */
+	alive_neighbors += local_grid[block_dimension - 2][1];
+	/* Right neighbor */
+	alive_neighbors += local_grid[block_dimension - 1][1];
+	/* Bot right neighbor (the value is borrowed by other process) */
+	alive_neighbors += bot_buff[1];
+	/* Bot neighbor (the value is borrowed by other process) */
+	alive_neighbors += bot_buff[0];
+	/* Bot left neighbor (the value is borrowed by other process) */
+	alive_neighbors += bot_left_value;
+	/* Left neighbor (the value is borrowed by other process) */
+	alive_neighbors += left_buff[block_dimension - 1];
+	/* If it is empty space */
+	if (local_grid[block_dimension - 1][0] == 0) {
+		/* If there are exact 3 neighbors create a new cell */
+		if (alive_neighbors == 3) {
+			next_local_grid[block_dimension - 1][0] = 1;
+		}
+	}
+	/* If already lives a cell */
+	else {
+		/* Determine if the cell lives or dies in next round */
+		/* Store the new value to the next_local_grid */
+		/* DIE */
+		if (alive_neighbors < 2 || alive_neighbors > 3) {
+			next_local_grid[block_dimension - 1][0] = 0;
+		}
+		/* LIVE */
+		else {
+			next_local_grid[block_dimension - 1][0] = 1;
 		}
 	}
 		

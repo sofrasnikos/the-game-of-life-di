@@ -21,4 +21,9 @@ void CalculateEdgeCells(int block_dimension, int **local_grid,
 		int *left_buff, int top_left_value, int top_right_value,
 		int bot_left_value, int bot_right_value);
 
+void CalculateEdgeCellsOpt(int block_dimension, int **local_grid,
+		int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff,
+		int *left_buff, int top_left_value, int top_right_value,
+		int bot_left_value, int bot_right_value);
+
 #endif /* EXECUTE_H_ */
