@@ -8,6 +8,8 @@
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
+#define MAXROW 1024
+
 /* This struct is used to determine how many processes are needed
  * and to pass the length of the inner squares sides*/
 typedef struct SplitAttributes {
@@ -18,6 +20,7 @@ typedef struct SplitAttributes {
 int CreateGrid(int ***grid, int dimension);
 void FreeGrid(int ***grid);
 void InitGrid(int **grid, int dimension);
+void readGrid(int **grid, char* filename, int dimension);
 void PrintGrid(int **grid, int dimension, int rank, int glob_grid);
 SplitAttributes ProcessNumber(int rows);
 

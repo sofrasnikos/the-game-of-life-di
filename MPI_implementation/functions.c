@@ -61,6 +61,41 @@ void InitGrid(int **grid, int dimension) {
 	}
 }
 
+void readGrid(int **grid, char* filename, int dimension){
+	FILE* f;
+	char line[MAXROW + 1];
+	printf("%s\n", filename);
+	f = fopen(filename, "r");
+	if (!f) {
+		printf("fopen failed\n");
+		exit(EXIT_FAILURE);
+	}
+	int i = 0;
+	int j;
+	while (1) {
+		if (fgets(line, MAXROW + 1, f) == NULL) {
+			break;
+		}
+		printf("%3d: %s", i, line);
+		int len = strlen(line) - 1;
+		if (len != dimension) {
+			printf("Found line greater than dimension given\n");
+			exit(EXIT_FAILURE); //todo den 3erw kata poso einai swsto na termatiz
+		}
+		for (j = 0; j < len; ++j) {
+			if (line[j] == '*' || line[j] == '1') {
+				grid[i][j] = 1;
+			} else if (line[j] == '.' || line[j] == '0') {
+				grid[i][j] = 0;
+			} else {
+				printf("Wrong characters found in %s. Accepted characters are: 01.*\n", filename);
+				exit(EXIT_FAILURE);
+			}
+		}
+		i++;
+	}
+}
+
 void PrintGrid(int **grid, int dimension, int rank, int glob_grid) {
 	int i, j;
 	char *filename = malloc(sizeof(char) * 256);
