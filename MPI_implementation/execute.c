@@ -145,11 +145,6 @@ int Execute(int rank, int num_of_proc, int dimension,
 	MPI_Cart_rank(comm, top_right, &top_right_rank);
 	MPI_Cart_rank(comm, bot_left, &bot_left_rank);
 	MPI_Cart_rank(comm, bot_right, &bot_right_rank);
-	if (rank == 0) {
-		printf("%d %d %d %d %d %d %d %d\n", top_rank, bot_rank, left_rank,
-				right_rank, top_left_rank, top_right_rank, bot_left_rank,
-				bot_right_rank);
-	}
 
 	MPI_Status status;
 	MPI_Request request;
