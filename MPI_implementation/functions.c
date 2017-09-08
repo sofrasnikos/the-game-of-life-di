@@ -16,7 +16,7 @@
 
 #define MAX_SIDE_LENGTH_OF_SQUARES 40
 
-int CreateGrid(int ***grid, int dimension) {
+int createGrid(int ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
 	int *p = (int *) malloc(dimension * dimension * sizeof(int));
@@ -38,12 +38,12 @@ int CreateGrid(int ***grid, int dimension) {
 	return 0;
 }
 
-void FreeGrid(int ***grid) {
+void freeGrid(int ***grid) {
 	free(&((*grid)[0][0]));
 	free(*grid);
 }
 
-void InitGrid(int **grid, int dimension) {
+void initGrid(int **grid, int dimension) {
 	int i, j, r;
 	/* Initialize the grid*/
 	for (i = 0; i < dimension; i++) {
@@ -61,7 +61,7 @@ void InitGrid(int **grid, int dimension) {
 	}
 }
 
-void readGrid(int **grid, char* filename, int dimension){
+void readGrid(int **grid, char* filename, int dimension) {
 	FILE* f;
 	char line[MAXROW + 1];
 	printf("%s\n", filename);
@@ -88,7 +88,9 @@ void readGrid(int **grid, char* filename, int dimension){
 			} else if (line[j] == '.' || line[j] == '0') {
 				grid[i][j] = 0;
 			} else {
-				printf("Wrong characters found in %s. Accepted characters are: 01.*\n", filename);
+				printf(
+						"Wrong characters found in %s. Accepted characters are: 01.*\n",
+						filename);
 				exit(EXIT_FAILURE);
 			}
 		}
@@ -96,7 +98,7 @@ void readGrid(int **grid, char* filename, int dimension){
 	}
 }
 
-void PrintGrid(int **grid, int dimension, int rank, int glob_grid) {
+void printGrid(int **grid, int dimension, int rank, int glob_grid) {
 	int i, j;
 	char *filename = malloc(sizeof(char) * 256);
 	struct stat buffer;
@@ -136,7 +138,7 @@ void PrintGrid(int **grid, int dimension, int rank, int glob_grid) {
 }
 
 /* This works only for squares*/
-SplitAttributes ProcessNumber(int dimension) {
+SplitAttributes processNumber(int dimension) {
 	SplitAttributes attributes;
 	int x, x_square, inner_number_of_squares, square_side_length;
 	int n_square = dimension * dimension;
@@ -146,6 +148,7 @@ SplitAttributes ProcessNumber(int dimension) {
 		//printf("x == %d, x_square == %d\n", x, x_square);
 		if (n_square % x_square == 0) {
 			inner_number_of_squares = n_square / x_square;
+//			printf("number of proc %d, length of side %d\n", inner_number_of_squares, x);
 			square_side_length = x;
 		}
 	}

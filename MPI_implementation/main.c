@@ -17,6 +17,9 @@
 #define DEFAULT_DIMENSION_SIZE 200
 
 int main(int argc, char *argv[]) {
+	clock_t start, end;
+	double cpu_time_used;
+	start = clock();
 
 	srand(time(NULL));
 
@@ -74,7 +77,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* Calculate the optimal number of processes that are required */
-	SplitAttributes attributes = ProcessNumber(dimension);
+	SplitAttributes attributes = processNumber(dimension);
 	if (num_of_proc != attributes.number_of_processes) {
 		if (rank == 0) {
 			printf(
@@ -86,9 +89,16 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	Execute(rank, num_of_proc, dimension, attributes);
+	execute(rank, num_of_proc, dimension, attributes);
 
 	MPI_Finalize();
-	printf("Terminated successfully\n");
+	if (rank == 0) {
+
+		end = clock();
+		cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+		printf("time elapsed: %lf\n", cpu_time_used);
+		printf("Terminated successfully\n");
+	}
+
 	return 0;
 }

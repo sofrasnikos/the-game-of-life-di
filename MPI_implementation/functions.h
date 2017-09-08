@@ -17,11 +17,11 @@ typedef struct SplitAttributes {
 	int length_of_sides;
 } SplitAttributes;
 
-int CreateGrid(int ***grid, int dimension);
-void FreeGrid(int ***grid);
-void InitGrid(int **grid, int dimension);
+int createGrid(int ***grid, int dimension);
+void freeGrid(int ***grid);
+void initGrid(int **grid, int dimension);
 void readGrid(int **grid, char* filename, int dimension);
-void PrintGrid(int **grid, int dimension, int rank, int glob_grid);
-SplitAttributes ProcessNumber(int rows);
+void printGrid(int **grid, int dimension, int rank, int glob_grid);
+SplitAttributes processNumber(int rows);
 
 #endif /* FUNCTIONS_H_ */
