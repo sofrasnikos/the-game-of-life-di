@@ -145,7 +145,9 @@ int Execute(int rank, int num_of_proc, int dimension,
 	MPI_Cart_rank(comm, top_right, &top_right_rank);
 	MPI_Cart_rank(comm, bot_left, &bot_left_rank);
 	MPI_Cart_rank(comm, bot_right, &bot_right_rank);
-
+	MPI_Datatype for_columns;
+	MPI_Type_vector(block_dimension, 1, block_dimension, MPI_INT, &for_columns);
+	MPI_Type_commit(&for_columns);
 	MPI_Status status;
 	MPI_Request request;
 
@@ -156,36 +158,16 @@ int Execute(int rank, int num_of_proc, int dimension,
 	MPI_Isend(&local_grid[0][0], block_dimension, MPI_INT, top_rank, 0,
 	MPI_COMM_WORLD, &request);
 	MPI_Isend(&local_grid[block_dimension - 1][0], block_dimension, MPI_INT,
-			bot_rank, 0,
-			MPI_COMM_WORLD, &request);
-	int temp_left_buff[block_dimension], temp_right_buff[block_dimension];
-	// Left and right are special cases because we have to create a buffer since the values are in a column
-	for (i = 0; i < block_dimension; i++) {
-		temp_left_buff[i] = local_grid[i][0];
-		temp_right_buff[i] = local_grid[i][block_dimension - 1];
-	}
-	MPI_Isend(temp_left_buff, block_dimension, MPI_INT, left_rank, 0,
-	MPI_COMM_WORLD, &request);
+			bot_rank, 0, MPI_COMM_WORLD, &request);
 
-	MPI_Datatype for_columns;
-	MPI_Type_vector(block_dimension, 1, block_dimension, MPI_INT, &for_columns);
-	MPI_Type_commit(&for_columns);
+	// Left and right are special cases because items in columns are not contiguous
 	MPI_Isend(&local_grid[0][0], 1, for_columns, left_rank, 0, MPI_COMM_WORLD, &request);
-	MPI_Type_free(&for_columns);
-
-	MPI_Isend(temp_right_buff, block_dimension, MPI_INT, right_rank, 0,
-
-	MPI_COMM_WORLD, &request);
-	MPI_Type_vector(block_dimension, 1, block_dimension, MPI_INT, &for_columns);
-	MPI_Type_commit(&for_columns);
 	MPI_Isend(&local_grid[0][block_dimension - 1], 1, for_columns, right_rank, 0, MPI_COMM_WORLD, &request);
-	MPI_Type_free(&for_columns);
-
+	MPI_Type_free(&for_columns); // TODO otan mpei se loupa auto prepei na einai exw apo th loupa sto telos
 	MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD,
 			&request);
 	MPI_Isend(&local_grid[0][block_dimension - 1], 1, MPI_INT, top_right_rank,
-			0,
-			MPI_COMM_WORLD, &request);
+			0, MPI_COMM_WORLD, &request);
 	MPI_Isend(&local_grid[block_dimension - 1][0], 1, MPI_INT, bot_left_rank, 0,
 	MPI_COMM_WORLD, &request);
 	MPI_Isend(&local_grid[block_dimension - 1][block_dimension - 1], 1, MPI_INT,
@@ -203,51 +185,9 @@ int Execute(int rank, int num_of_proc, int dimension,
 	MPI_Recv(&top_buff, block_dimension, MPI_INT, top_rank, 0, MPI_COMM_WORLD,
 			&status);
 	MPI_Recv(&right_buff, block_dimension, MPI_INT, right_rank, 0,
-	MPI_COMM_WORLD, &status);
-	int right_buff2[block_dimension];
-	int left_buff2[block_dimension];
-	MPI_Recv(&right_buff2, block_dimension, MPI_INT, right_rank, 0,
 		MPI_COMM_WORLD, &status);
-	if(rank == 6)	{
-		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
-		for (i = 0; i < block_dimension; i++) {
-			if (right_buff[i] == 1) {
-				printf("*");
-			} else {
-				printf(".");
-			}
-		}
-		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
-				for (i = 0; i < block_dimension; i++) {
-					if (right_buff2[i] == 1) {
-						printf("*");
-					} else {
-						printf(".");
-					}
-				}
-	}
 	MPI_Recv(&left_buff, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
-			&status);
-	MPI_Recv(&left_buff2, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
 				&status);
-	if(rank == 6)	{
-		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
-		for (i = 0; i < block_dimension; i++) {
-			if (left_buff[i] == 1) {
-				printf("*");
-			} else {
-				printf(".");
-			}
-		}
-		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
-				for (i = 0; i < block_dimension; i++) {
-					if (left_buff2[i] == 1) {
-						printf("*");
-					} else {
-						printf(".");
-					}
-				}
-	}
 	MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD,
 			&status);
 	MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD,
