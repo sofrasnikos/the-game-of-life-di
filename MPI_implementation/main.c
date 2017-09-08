@@ -89,5 +89,6 @@ int main(int argc, char *argv[]) {
 	Execute(rank, num_of_proc, dimension, attributes);
 
 	MPI_Finalize();
+	printf("Terminated successfully\n");
 	return 0;
 }

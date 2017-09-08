@@ -166,8 +166,21 @@ int Execute(int rank, int num_of_proc, int dimension,
 	}
 	MPI_Isend(temp_left_buff, block_dimension, MPI_INT, left_rank, 0,
 	MPI_COMM_WORLD, &request);
+
+	MPI_Datatype for_columns;
+	MPI_Type_vector(block_dimension, 1, block_dimension, MPI_INT, &for_columns);
+	MPI_Type_commit(&for_columns);
+	MPI_Isend(&local_grid[0][0], 1, for_columns, left_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Type_free(&for_columns);
+
 	MPI_Isend(temp_right_buff, block_dimension, MPI_INT, right_rank, 0,
+
 	MPI_COMM_WORLD, &request);
+	MPI_Type_vector(block_dimension, 1, block_dimension, MPI_INT, &for_columns);
+	MPI_Type_commit(&for_columns);
+	MPI_Isend(&local_grid[0][block_dimension - 1], 1, for_columns, right_rank, 0, MPI_COMM_WORLD, &request);
+	MPI_Type_free(&for_columns);
+
 	MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD,
 			&request);
 	MPI_Isend(&local_grid[0][block_dimension - 1], 1, MPI_INT, top_right_rank,
@@ -191,8 +204,50 @@ int Execute(int rank, int num_of_proc, int dimension,
 			&status);
 	MPI_Recv(&right_buff, block_dimension, MPI_INT, right_rank, 0,
 	MPI_COMM_WORLD, &status);
+	int right_buff2[block_dimension];
+	int left_buff2[block_dimension];
+	MPI_Recv(&right_buff2, block_dimension, MPI_INT, right_rank, 0,
+		MPI_COMM_WORLD, &status);
+	if(rank == 6)	{
+		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
+		for (i = 0; i < block_dimension; i++) {
+			if (right_buff[i] == 1) {
+				printf("*");
+			} else {
+				printf(".");
+			}
+		}
+		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
+				for (i = 0; i < block_dimension; i++) {
+					if (right_buff2[i] == 1) {
+						printf("*");
+					} else {
+						printf(".");
+					}
+				}
+	}
 	MPI_Recv(&left_buff, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
 			&status);
+	MPI_Recv(&left_buff2, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD,
+				&status);
+	if(rank == 6)	{
+		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
+		for (i = 0; i < block_dimension; i++) {
+			if (left_buff[i] == 1) {
+				printf("*");
+			} else {
+				printf(".");
+			}
+		}
+		printf("I am rank %d. Received from right (%d):\n", rank, right_rank);
+				for (i = 0; i < block_dimension; i++) {
+					if (left_buff2[i] == 1) {
+						printf("*");
+					} else {
+						printf(".");
+					}
+				}
+	}
 	MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD,
 			&status);
 	MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD,
