@@ -52,7 +52,7 @@ void initGrid(int **grid, int dimension) {
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
 			 * 70% possibility to create empty space*/
-			if (r < 4) { //TODO
+			if (r < 3) { //TODO
 				grid[i][j] = 1;
 			} else {
 				grid[i][j] = 0;
