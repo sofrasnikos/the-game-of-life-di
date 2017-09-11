@@ -65,12 +65,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	/* Create another local grid which will contain the values after the calculations */
 	createGrid(&next_local_grid, block_dimension);
 	//INIT
-//	for (i = 0; i < block_dimension; i++) {
-//		for (j = 0; j < block_dimension; j++) {
-//			next_local_grid[i][j] = 0;
-//		}
-//	}
-
 	/* Create MPI_Datatypes*/
 	MPI_Datatype block_type_1, block_type_2;
 	MPI_Type_vector(block_dimension, block_dimension, dimension, MPI_INT, &block_type_2);
@@ -204,7 +198,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			if (rank == p) {
 				printGrid(next_local_grid, block_dimension, rank, 0);
 			}
-//			MPI_Barrier(MPI_COMM_WORLD);
 		}
 		int different = 0;
 		int zero_check = memcmp(zero_block, *next_local_grid, block_dimension * block_dimension * sizeof(int));
@@ -216,15 +209,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			different = memcmp(*local_grid, *next_local_grid, block_dimension * block_dimension * sizeof(int));
 			zero_check = 1;
 		}
-//		// If it is different and not zero
-//		if (different != 0 && zero_check != 0) {
-//			different = 1;
-////			printf("rank %d: different\n", rank);
-//		} else {
-//			different = 0;
-//			//todo send alert
-////			printf("rank %d: same\n", rank);
-//		}
 		int keep_looping;
 		// If it is different and not zero
 		if (different != 0 && zero_check != 0) {
@@ -236,7 +220,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		if (rank == 0) {
 			continue_next_gen = 0;
 			for (p = 0; p < num_of_proc; p++) {
-//				printf("%d ", dif_array[p]);
 				if (dif_array[p] == 1) {
 					printf("process %d has differences\n", p);
 					continue_next_gen = 1;
@@ -244,7 +227,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 				}
 
 			}
-//			printf("\n");
 			printf("continue_next_gen: %d\n", continue_next_gen);
 		}
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -265,26 +247,11 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			}
 		}
 
-		//	printGrid(next_local_grid, dimension, rank, 1);
 		if (rank == 0) {
 			printGrid(grid, dimension, rank, 1);
 		}
 	}
 
-//	if (continue_next_gen == 0) {
-//		mpi send();
-//	} else {
-//
-//	}
-
-//	} else {
-//		MPI_Isend(&different, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, &request);
-//	}
-
-//	MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &status);
-
-	/* Gather all processed blocks to process 0 */
-//	MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
 	/* Free local grids */
 	freeGrid(&local_grid);
 	freeGrid(&next_local_grid);
@@ -292,9 +259,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	MPI_Type_free(&block_type_2);
 	MPI_Type_free(&for_columns);
 
-//	if (rank == 0) {
-//		printGrid(grid, dimension, rank, 1);
-//	}
 	/* Free grid */
 	if (rank == 0) {
 		freeGrid(&grid);
