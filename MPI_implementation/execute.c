@@ -260,6 +260,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 
 void calculateInnerCells(int block_dimension, int **local_grid, int **next_local_grid) {
 	int i, j;
+	int me;
 	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
 	/* Ignore the first row (i == 0) and the last row (i == block_dimension - 1) */
 	int alive_neighbors;
@@ -284,27 +285,8 @@ void calculateInnerCells(int block_dimension, int **local_grid, int **next_local
 			alive_neighbors += local_grid[i + 1][j - 1];
 			/* Left neighbor */
 			alive_neighbors += local_grid[i][j - 1];
-
-			/* If it is empty space */
-			if (local_grid[i][j] == 0) {
-				/* If there are exact 3 neighbors create a new cell */
-				if (alive_neighbors == 3) {
-					next_local_grid[i][j] = 1;
-				}
-			}
-			/* If already lives a cell */
-			else {
-				/* Determine if the cell lives or dies in next round */
-				/* Store the new value to the next_local_grid */
-				/* DIE */
-				if (alive_neighbors < 2 || alive_neighbors > 3) {
-					next_local_grid[i][j] = 0;
-				}
-				/* LIVE */
-				else {
-					next_local_grid[i][j] = 1;
-				}
-			}
+			me = local_grid[i][j];
+			next_local_grid[i][j] = deadOrAlive(alive_neighbors, me);
 		}
 	}
 }
