@@ -64,7 +64,7 @@ void initGrid(int **grid, int dimension) {
 void readGrid(int **grid, char* filename, int dimension) {
 	FILE* f;
 	char line[MAXROW + 1];
-	printf("%s\n", filename);
+	printf("Opening %s...\n", filename);
 	f = fopen(filename, "r");
 	if (!f) {
 		printf("fopen failed\n");
@@ -76,7 +76,6 @@ void readGrid(int **grid, char* filename, int dimension) {
 		if (fgets(line, MAXROW + 1, f) == NULL) {
 			break;
 		}
-		printf("%3d: %s", i, line);
 		int len = strlen(line) - 1;
 		if (len != dimension) {
 			printf("Found line greater than dimension given\n");

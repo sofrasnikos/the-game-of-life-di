@@ -35,19 +35,16 @@ int main(int argc, char *argv[]) {
 	/* Arguments sanitation */
 	if (argc == 1) {
 		if (rank == 0) {
-			printf(
-					"usage: ./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid>\n");
+			printf("usage: ./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid>\n");
 			printf("NOTE: dimension_of_grid must be at least '50'\n");
-			printf(
-					"the program will be executed with default grid size (200x200)\n");
+			printf("the program will be executed with default grid size (%dx%d)\n", DEFAULT_DIMENSION_SIZE, DEFAULT_DIMENSION_SIZE);
 		}
 		dimension = DEFAULT_DIMENSION_SIZE;
 	} else if (argc == 3) {
 		if (strncmp(argv[1], "-d", 2) != 0) {
 			if (rank == 0) {
 				printf("unknown flag '%s'\n", argv[1]);
-				printf(
-						"usage: ./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid>\n");
+				printf("usage: ./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid>\n");
 				printf("NOTE: dimension_of_grid must be at least '50'\n");
 				printf("program exiting...\n");
 			}
@@ -64,8 +61,7 @@ int main(int argc, char *argv[]) {
 		}
 	} else {
 		if (rank == 0) {
-			printf(
-					"usage: ./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid>\n");
+			printf("usage: ./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid>\n");
 			printf("NOTE: dimension_of_grid must be at least '50'\n");
 			printf("program exiting...\n");
 			terminate = 1;
@@ -80,9 +76,7 @@ int main(int argc, char *argv[]) {
 	SplitAttributes attributes = processNumber(dimension);
 	if (num_of_proc != attributes.number_of_processes) {
 		if (rank == 0) {
-			printf(
-					"the given grid is %d x %d\nthe optimal number of processes is %d\n",
-					dimension, dimension, attributes.number_of_processes);
+			printf("the given grid is %d x %d\nthe optimal number of processes is %d\n", dimension, dimension, attributes.number_of_processes);
 			printf("program exiting...\n");
 		}
 		MPI_Finalize();
@@ -102,3 +96,8 @@ int main(int argc, char *argv[]) {
 
 	return 0;
 }
+
+// TODO proper input gia command line arguments
+// TODO svisimo apo print se o8onh kai arxeia
+// TODO paraver gia statistika
+

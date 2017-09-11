@@ -155,13 +155,12 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 
 	int top_buff[block_dimension], bot_buff[block_dimension], left_buff[block_dimension], right_buff[block_dimension];
 	int top_left_value, top_right_value, bot_left_value, bot_right_value;
-	int generation = 0;
+	int generation = 1;
 	continue_next_gen = 1;
 	while (continue_next_gen == 1 && generation < 4) {
 		if (rank == 0) {
 			printf("Generation: %d\n", generation);
 		}
-		generation++;
 		// Send to all eight neighbors
 		MPI_Isend(&local_grid[0][0], block_dimension, MPI_INT, top_rank, 0,
 		MPI_COMM_WORLD, &request);
@@ -182,8 +181,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		/* Receive from every neighbor */
 		MPI_Recv(&bot_buff, block_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&top_buff, block_dimension, MPI_INT, top_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&right_buff, block_dimension, MPI_INT, right_rank, 0,
-		MPI_COMM_WORLD, &status);
+		MPI_Recv(&right_buff, block_dimension, MPI_INT, right_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&left_buff, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD, &status);
@@ -200,10 +198,8 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			}
 		}
 		int different = 0;
+		// Check if grid is next_local_grid by checking if it is the same as a grid full of zeros
 		int zero_check = memcmp(zero_block, *next_local_grid, block_dimension * block_dimension * sizeof(int));
-		if (zero_check == 0) {
-			printf("asdfsdfasdf\n");
-		}
 		// If at least one cell is not zero
 		if (zero_check != 0) {
 			different = memcmp(*local_grid, *next_local_grid, block_dimension * block_dimension * sizeof(int));
@@ -213,7 +209,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		// If it is different and not zero
 		if (different != 0 && zero_check != 0) {
 			keep_looping = 1;
-		} else{
+		} else {
 			keep_looping = 0;
 		}
 		MPI_Gather(&keep_looping, 1, MPI_INT, dif_array, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -221,17 +217,12 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			continue_next_gen = 0;
 			for (p = 0; p < num_of_proc; p++) {
 				if (dif_array[p] == 1) {
-					printf("process %d has differences\n", p);
 					continue_next_gen = 1;
 					break;
 				}
-
 			}
-			printf("continue_next_gen: %d\n", continue_next_gen);
 		}
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		printf("rank %d: continue_next_gen: %d\n", rank, continue_next_gen);
-
 		MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
 
 		printGrid2(local_grid, block_dimension, rank, 0);
@@ -239,7 +230,6 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		temp = &(*next_local_grid);
 		next_local_grid = &(*local_grid);
 		local_grid = temp;
-
 
 		for (i = 0; i < block_dimension; ++i) {
 			for (j = 0; j < block_dimension; ++j) {
@@ -250,6 +240,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		if (rank == 0) {
 			printGrid(grid, dimension, rank, 1);
 		}
+		generation++;
 	}
 
 	/* Free local grids */
@@ -318,10 +309,8 @@ void calculateInnerCells(int block_dimension, int **local_grid, int **next_local
 	}
 }
 
-void calculateEdgeCells(int block_dimension, int **local_grid,
-		int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff,
-		int *left_buff, int top_left_value, int top_right_value,
-		int bot_left_value, int bot_right_value) {
+void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff, int *left_buff,
+		int top_left_value, int top_right_value, int bot_left_value, int bot_right_value) {
 	int k;
 	int alive_neighbors = 0;
 	int me;
@@ -505,7 +494,6 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 	me = next_local_grid[block_dimension - 1][0];
 	next_local_grid[block_dimension - 1][0] = deadOrAlive(alive_neighbors, me);
 }
-
 
 int deadOrAlive(int alive_neighbors, int status) {
 	/* If it is empty space */
