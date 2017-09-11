@@ -46,7 +46,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	if (rank == 0) {
 		createGrid(&grid, dimension);
 		initGrid(grid, dimension);
-//		readGrid(grid, "../inputs/grid200.txt", dimension);
+		readGrid(grid, "../inputs/peos2.txt", dimension);
 		int dir_stat = mkdir("../outputs",
 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if (dir_stat != 0 && errno != EEXIST) {
@@ -213,7 +213,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		}
 		// If at least one cell is not zero
 		if (zero_check != 0) {
-//			different = memcmp(*local_grid, *next_local_grid, block_dimension * block_dimension * sizeof(int));
+			different = memcmp(*local_grid, *next_local_grid, block_dimension * block_dimension * sizeof(int));
 			zero_check = 1;
 		}
 //		// If it is different and not zero
@@ -225,7 +225,14 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 //			//todo send alert
 ////			printf("rank %d: same\n", rank);
 //		}
-		MPI_Gather(&zero_check, 1, MPI_INT, dif_array, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		int keep_looping;
+		// If it is different and not zero
+		if (different != 0 && zero_check != 0) {
+			keep_looping = 1;
+		} else{
+			keep_looping = 0;
+		}
+		MPI_Gather(&keep_looping, 1, MPI_INT, dif_array, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		if (rank == 0) {
 			continue_next_gen = 0;
 			for (p = 0; p < num_of_proc; p++) {
