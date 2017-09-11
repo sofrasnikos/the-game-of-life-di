@@ -46,7 +46,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	if (rank == 0) {
 		createGrid(&grid, dimension);
 		initGrid(grid, dimension);
-		readGrid(grid, "../inputs/peos2.txt", dimension);
+		readGrid(grid, "../inputs/rectangles.txt", dimension);
 		int dir_stat = mkdir("../outputs",
 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if (dir_stat != 0 && errno != EEXIST) {
@@ -324,6 +324,7 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 		int bot_left_value, int bot_right_value) {
 	int k;
 	int alive_neighbors = 0;
+	int me;
 	for (k = 1; k < block_dimension - 1; k++) {
 		/* TOP ROW */
 		alive_neighbors = 0;
@@ -344,27 +345,9 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 		alive_neighbors += local_grid[1][k - 1];
 		/* Left neighbor */
 		alive_neighbors += local_grid[0][k - 1];
+		me = local_grid[0][k];
+		next_local_grid[0][k] = deadOrAlive(alive_neighbors, me);
 
-		/* If it is empty space */
-		if (local_grid[0][k] == 0) {
-			/* If there are exact 3 neighbors create a new cell */
-			if (alive_neighbors == 3) {
-				next_local_grid[0][k] = 1;
-			}
-		}
-		/* If already lives a cell */
-		else {
-			/* Determine if the cell lives or dies in next round */
-			/* Store the new value to the next_local_grid */
-			/* DIE */
-			if (alive_neighbors < 2 || alive_neighbors > 3) {
-				next_local_grid[0][k] = 0;
-			}
-			/* LIVE */
-			else {
-				next_local_grid[0][k] = 1;
-			}
-		}
 		/* BOT ROW */
 		alive_neighbors = 0;
 		/* Calculate the value of the current cell according to its neighbors */
@@ -384,27 +367,9 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 		alive_neighbors += local_grid[block_dimension - 2][k - 1];
 		/* Left neighbor */
 		alive_neighbors += local_grid[block_dimension - 1][k - 1];
+		me = local_grid[block_dimension - 1][k];
+		next_local_grid[block_dimension - 1][k] = deadOrAlive(alive_neighbors, me);
 
-		/* If it is empty space */
-		if (local_grid[block_dimension - 1][k] == 0) {
-			/* If there are exact 3 neighbors create a new cell */
-			if (alive_neighbors == 3) {
-				next_local_grid[block_dimension - 1][k] = 1;
-			}
-		}
-		/* If already lives a cell */
-		else {
-			/* Determine if the cell lives or dies in next round */
-			/* Store the new value to the next_local_grid */
-			/* DIE */
-			if (alive_neighbors < 2 || alive_neighbors > 3) {
-				next_local_grid[block_dimension - 1][k] = 0;
-			}
-			/* LIVE */
-			else {
-				next_local_grid[block_dimension - 1][k] = 1;
-			}
-		}
 		/* LEFT COLUMN */
 		alive_neighbors = 0;
 		/* Calculate the value of the current cell according to its neighbors */
@@ -424,27 +389,9 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 		alive_neighbors += local_grid[k - 1][1];
 		/* Left neighbor */
 		alive_neighbors += local_grid[k - 1][0];
+		me = local_grid[k][0];
+		next_local_grid[k][0] = deadOrAlive(alive_neighbors, me);
 
-		/* If it is empty space */
-		if (local_grid[k][0] == 0) {
-			/* If there are exact 3 neighbors create a new cell */
-			if (alive_neighbors == 3) {
-				next_local_grid[k][0] = 1;
-			}
-		}
-		/* If already lives a cell */
-		else {
-			/* Determine if the cell lives or dies in next round */
-			/* Store the new value to the next_local_grid */
-			/* DIE */
-			if (alive_neighbors < 2 || alive_neighbors > 3) {
-				next_local_grid[k][0] = 0;
-			}
-			/* LIVE */
-			else {
-				next_local_grid[k][0] = 1;
-			}
-		}
 		/* RIGHT COLUMN */
 		alive_neighbors = 0;
 		/* Calculate the value of the current cell according to its neighbors */
@@ -464,27 +411,8 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 		alive_neighbors += local_grid[k - 1][block_dimension - 2];
 		/* Left neighbor */
 		alive_neighbors += local_grid[k - 1][block_dimension - 1];
-
-		/* If it is empty space */
-		if (local_grid[k][block_dimension - 1] == 0) {
-			/* If there are exact 3 neighbors create a new cell */
-			if (alive_neighbors == 3) {
-				next_local_grid[k][block_dimension - 1] = 1;
-			}
-		}
-		/* If already lives a cell */
-		else {
-			/* Determine if the cell lives or dies in next round */
-			/* Store the new value to the next_local_grid */
-			/* DIE */
-			if (alive_neighbors < 2 || alive_neighbors > 3) {
-				next_local_grid[k][block_dimension - 1] = 0;
-			}
-			/* LIVE */
-			else {
-				next_local_grid[k][block_dimension - 1] = 1;
-			}
-		}
+		me = local_grid[k][block_dimension - 1];
+		next_local_grid[k][block_dimension - 1] = deadOrAlive(alive_neighbors, me);
 	}
 	/* TOP LEFT CELL */
 	alive_neighbors = 0;
@@ -505,27 +433,8 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 	alive_neighbors += left_buff[1];
 	/* Left neighbor (the value is borrowed by other process) */
 	alive_neighbors += left_buff[0];
-
-	/* If it is empty space */
-	if (local_grid[0][0] == 0) {
-		/* If there are exact 3 neighbors create a new cell */
-		if (alive_neighbors == 3) {
-			next_local_grid[0][0] = 1;
-		}
-	}
-	/* If already lives a cell */
-	else {
-		/* Determine if the cell lives or dies in next round */
-		/* Store the new value to the next_local_grid */
-		/* DIE */
-		if (alive_neighbors < 2 || alive_neighbors > 3) {
-			next_local_grid[0][0] = 0;
-		}
-		/* LIVE */
-		else {
-			next_local_grid[0][0] = 1;
-		}
-	}
+	me = local_grid[0][0];
+	next_local_grid[0][0] = deadOrAlive(alive_neighbors, me);
 
 	/* TOP RIGHT CELL */
 	alive_neighbors = 0;
@@ -546,26 +455,9 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 	alive_neighbors += local_grid[1][block_dimension - 2];
 	/* Left neighbor */
 	alive_neighbors += local_grid[0][block_dimension - 2]; /* edw exei allagh */
-	/* If it is empty space */
-	if (local_grid[0][block_dimension - 1] == 0) {
-		/* If there are exact 3 neighbors create a new cell */
-		if (alive_neighbors == 3) {
-			next_local_grid[0][block_dimension - 1] = 1;
-		}
-	}
-	/* If already lives a cell */
-	else {
-		/* Determine if the cell lives or dies in next round */
-		/* Store the new value to the next_local_grid */
-		/* DIE */
-		if (alive_neighbors < 2 || alive_neighbors > 3) {
-			next_local_grid[0][block_dimension - 1] = 0;
-		}
-		/* LIVE */
-		else {
-			next_local_grid[0][block_dimension - 1] = 1;
-		}
-	}
+	me = local_grid[0][block_dimension - 1];
+	next_local_grid[0][block_dimension - 1] = deadOrAlive(alive_neighbors, me);
+
 	/* BOTTOM RIGHT CELL */
 	alive_neighbors = 0;
 	/* Bot right cell
@@ -587,26 +479,9 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 	alive_neighbors += bot_buff[block_dimension - 2];
 	/* Left neighbor */
 	alive_neighbors += local_grid[block_dimension - 1][block_dimension - 2];
-	/* If it is empty space */
-	if (local_grid[block_dimension - 1][block_dimension - 1] == 0) {
-		/* If there are exact 3 neighbors create a new cell */
-		if (alive_neighbors == 3) {
-			next_local_grid[block_dimension - 1][block_dimension - 1] = 1;
-		}
-	}
-	/* If already lives a cell */
-	else {
-		/* Determine if the cell lives or dies in next round */
-		/* Store the new value to the next_local_grid */
-		/* DIE */
-		if (alive_neighbors < 2 || alive_neighbors > 3) {
-			next_local_grid[block_dimension - 1][block_dimension - 1] = 0;
-		}
-		/* LIVE */
-		else {
-			next_local_grid[block_dimension - 1][block_dimension - 1] = 1;
-		}
-	}
+	me = local_grid[block_dimension - 1][block_dimension - 1];
+	next_local_grid[block_dimension - 1][block_dimension - 1] = deadOrAlive(alive_neighbors, me);
+
 	/* BOTTOM LEFT CELL */
 	alive_neighbors = 0;
 	/* Calculate the value of the current cell according to its neighbors */
@@ -627,25 +502,8 @@ void calculateEdgeCells(int block_dimension, int **local_grid,
 	/* Left neighbor (the value is borrowed by other process) */
 	alive_neighbors += left_buff[block_dimension - 1];
 	/* If it is empty space */
-	if (local_grid[block_dimension - 1][0] == 0) {
-		/* If there are exact 3 neighbors create a new cell */
-		if (alive_neighbors == 3) {
-			next_local_grid[block_dimension - 1][0] = 1;
-		}
-	}
-	/* If already lives a cell */
-	else {
-		/* Determine if the cell lives or dies in next round */
-		/* Store the new value to the next_local_grid */
-		/* DIE */
-		if (alive_neighbors < 2 || alive_neighbors > 3) {
-			next_local_grid[block_dimension - 1][0] = 0;
-		}
-		/* LIVE */
-		else {
-			next_local_grid[block_dimension - 1][0] = 1;
-		}
-	}
+	me = next_local_grid[block_dimension - 1][0];
+	next_local_grid[block_dimension - 1][0] = deadOrAlive(alive_neighbors, me);
 }
 
 
