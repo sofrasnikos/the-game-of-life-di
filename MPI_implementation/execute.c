@@ -17,8 +17,7 @@
 
 #include "execute.h"
 
-int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes) {
-
+int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes, int loops, char *input_file) {
 	int i, j, p;
 	int **grid, **local_grid, **next_local_grid;
 	int block_dimension = attributes.length_of_sides;
@@ -46,7 +45,9 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	if (rank == 0) {
 		createGrid(&grid, dimension);
 		initGrid(grid, dimension);
-		readGrid(grid, "../inputs/rectangles.txt", dimension);
+		if (input_file != NULL) {
+			readGrid(grid, input_file, dimension);
+		}
 		int dir_stat = mkdir("../outputs",
 		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if (dir_stat != 0 && errno != EEXIST) {
@@ -93,6 +94,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	if (rank == 0) {
 		printGrid(grid, dimension, rank, 1);
 	}
+
 	//todo to parakatw printf uparxei gia dieukolhnsh sto debugging.
 	//isws na mhn xreiazetai sth teleutaia ekdosh
 	/* Print local blocks(subgrids) */
@@ -103,6 +105,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 //		}
 //		MPI_Barrier(MPI_COMM_WORLD);
 //	}
+
 	int coords[2];
 	MPI_Cart_coords(comm, rank, 2, coords);
 
@@ -157,7 +160,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	int top_left_value, top_right_value, bot_left_value, bot_right_value;
 	int generation = 1;
 	continue_next_gen = 1;
-	while (continue_next_gen == 1 && generation < 4) {
+	while (continue_next_gen == 1 && generation <= loops) {
 		if (rank == 0) {
 			printf("Generation: %d\n", generation);
 		}
@@ -189,14 +192,15 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &status);
 		calculateEdgeCells(block_dimension, local_grid, next_local_grid, top_buff, right_buff, bot_buff, left_buff, top_left_value, top_right_value,
 				bot_left_value, bot_right_value);
+
 		//todo erase
 		//print grids gia dieukolunhsh sto debugging
+//		for (p = 0; p < num_of_proc; p++) {
+//			if (rank == p) {
+//				printGrid(next_local_grid, block_dimension, rank, 0);
+//			}
+//		}
 
-		for (p = 0; p < num_of_proc; p++) {
-			if (rank == p) {
-				printGrid(next_local_grid, block_dimension, rank, 0);
-			}
-		}
 		int different = 0;
 		// Check if grid is next_local_grid by checking if it is the same as a grid full of zeros
 		int zero_check = memcmp(zero_block, *next_local_grid, block_dimension * block_dimension * sizeof(int));
@@ -225,17 +229,17 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
 
-		printGrid2(local_grid, block_dimension, rank, 0);
+//		printGrid2(local_grid, block_dimension, rank, 0);
 		int** temp;
 		temp = &(*next_local_grid);
 		next_local_grid = &(*local_grid);
 		local_grid = temp;
 
-		for (i = 0; i < block_dimension; ++i) {
-			for (j = 0; j < block_dimension; ++j) {
-				next_local_grid[i][j] = 0;
-			}
-		}
+//		for (i = 0; i < block_dimension; ++i) {
+//			for (j = 0; j < block_dimension; ++j) {
+//				next_local_grid[i][j] = 0;
+//			}
+//		}
 
 		if (rank == 0) {
 			printGrid(grid, dimension, rank, 1);

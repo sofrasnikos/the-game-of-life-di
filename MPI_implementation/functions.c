@@ -14,8 +14,6 @@
 
 #include "functions.h"
 
-#define MAX_SIDE_LENGTH_OF_SQUARES 40
-
 int createGrid(int ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
@@ -52,7 +50,7 @@ void initGrid(int **grid, int dimension) {
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
 			 * 70% possibility to create empty space*/
-			if (r < 3) { //TODO
+			if (r < 30) { //TODO
 				grid[i][j] = 1;
 			} else {
 				grid[i][j] = 0;
@@ -174,13 +172,14 @@ void printGrid2(int **grid, int dimension, int rank, int glob_grid) {
 	fclose(fd);
 	free(filename);
 }
+
 /* This works only for squares*/
-SplitAttributes processNumber(int dimension) {
+SplitAttributes processNumber(int dimension, int sub_grid_size) {
 	SplitAttributes attributes;
 	int x, x_square, inner_number_of_squares, square_side_length;
 	int n_square = dimension * dimension;
 
-	for (x = 1; x <= MAX_SIDE_LENGTH_OF_SQUARES; x++) {
+	for (x = 1; x <= sub_grid_size; x++) {
 		x_square = x * x;
 //printf("x == %d, x_square == %d\n", x, x_square);
 		if (n_square % x_square == 0) {

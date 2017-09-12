@@ -11,7 +11,7 @@
 #include "functions.h"
 
 int execute(int rank, int num_of_proc, int dimension,
-		SplitAttributes attributes);
+		SplitAttributes attributes, int number_of_loops, char *file);
 
 void calculateInnerCells(int block_dimension, int **local_grid,
 		int **next_local_grid);
