@@ -70,7 +70,7 @@ void readGrid(int **grid, char* filename, int dimension) {
 		}
 		int len = strlen(line) - 1;
 		if (len != dimension) {
-			printf("Found line greater than dimension given\n");
+			printf("Found line size different than dimension given\n");
 			exit(EXIT_FAILURE);
 		}
 		for (j = 0; j < len; j++) {

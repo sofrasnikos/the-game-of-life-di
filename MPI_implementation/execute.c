@@ -38,7 +38,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 			printf("mkdir error %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		printf("side = %d\n", sub_grid_dimension);
+		printf("block size: %d\n", sub_grid_dimension);
 	}
 
 	/* Create a zero array to compare if a local grid has only 0 */
