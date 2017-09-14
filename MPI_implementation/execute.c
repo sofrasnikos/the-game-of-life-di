@@ -1,10 +1,3 @@
-/*
- * execute.c
- *
- *  Created on: Aug 8, 2017
- *      Author: vangelis
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -81,21 +74,11 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	MPI_Scatterv(ptr_to_grid, sendcounts, displs, block_type_1, &(local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, 0,
 	MPI_COMM_WORLD);
 
+	//todo make this optional
 	/* Print grid */
 	if (rank == 0) {
 		printGrid(grid, dimension, rank, 1);
 	}
-
-	//todo to parakatw printf uparxei gia dieukolhnsh sto debugging.
-	//isws na mhn xreiazetai sth teleutaia ekdosh
-	/* Print local blocks(subgrids) */
-//	int p;
-//	for (p = 0; p < num_of_proc; p++) {
-//		if (rank == p) {
-//			printGrid(local_grid, sub_grid_dimension, rank, 0);
-//		}
-//		MPI_Barrier(MPI_COMM_WORLD);
-//	}
 
 	int coords[2];
 	MPI_Cart_coords(comm, rank, 2, coords);
@@ -184,14 +167,6 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		calculateEdgeCells(sub_grid_dimension, local_grid, next_local_grid, top_buff, right_buff, bot_buff, left_buff, top_left_value, top_right_value,
 				bot_left_value, bot_right_value);
 
-		//todo erase
-		//print grids gia dieukolunhsh sto debugging
-//		for (p = 0; p < num_of_proc; p++) {
-//			if (rank == p) {
-//				printGrid(next_local_grid, sub_grid_dimension, rank, 0);
-//			}
-//		}
-
 		int different = 0;
 		// Check if grid is next_local_grid by checking if it is the same as a grid full of zeros
 		int zero_check = memcmp(zero_block, *next_local_grid, sub_grid_dimension * sub_grid_dimension * sizeof(int));
@@ -218,6 +193,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 			}
 		}
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+		//todo make this optional
 		MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
 
 		int** temp;
@@ -225,12 +202,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		next_local_grid = &(*local_grid);
 		local_grid = temp;
 
-//		for (i = 0; i < sub_grid_dimension; ++i) {
-//			for (j = 0; j < sub_grid_dimension; ++j) {
-//				next_local_grid[i][j] = 0;
-//			}
-//		}
-
+		//todo make this optional
 		if (rank == 0) {
 			printGrid(grid, dimension, rank, 1);
 		}
@@ -419,7 +391,7 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	/* Bot left neighbor */
 	alive_neighbors += local_grid[1][sub_grid_dimension - 2];
 	/* Left neighbor */
-	alive_neighbors += local_grid[0][sub_grid_dimension - 2]; /* edw exei allagh */
+	alive_neighbors += local_grid[0][sub_grid_dimension - 2];
 	me = local_grid[0][sub_grid_dimension - 1];
 	next_local_grid[0][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
 
@@ -451,7 +423,7 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	alive_neighbors = 0;
 	/* Calculate the value of the current cell according to its neighbors */
 	/* Top left neighbor (the value is borrowed by other process) */
-	alive_neighbors += left_buff[sub_grid_dimension - 2]; /* edw exei allagh */
+	alive_neighbors += left_buff[sub_grid_dimension - 2];
 	/* Top neighbor */
 	alive_neighbors += local_grid[sub_grid_dimension - 2][0];
 	/* Top right neighbor */

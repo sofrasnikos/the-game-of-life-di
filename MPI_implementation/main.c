@@ -1,10 +1,3 @@
-/*
- * main.c
- *
- *  Created on: Jul 10, 2017
- *      Author: vangelis
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
@@ -15,10 +8,10 @@
 #include "execute.h"
 
 int main(int argc, char *argv[]) {
+
 	clock_t start, end;
 	double cpu_time_used;
 	start = clock();
-
 	srand(time(NULL));
 
 	int i;
@@ -31,7 +24,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
 
-	for (i = 1; i < argc; ++i) {
+	// Parse arguments
+	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d")) {
 			i++;
 			if (argv[i] != NULL) {
@@ -73,6 +67,8 @@ int main(int argc, char *argv[]) {
 			break;
 		}
 	}
+
+	// Default values if user does not specify
 	if (dimension == -1) {
 		dimension = DEFAULT_DIMENSION_SIZE;
 	}
@@ -104,7 +100,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			printf(
-					"USAGE:./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid> -m <sub_grid_size> -f <input_file> -l <number_of_loops>\n");
+					"USAGE:mpiexec -np <number_of_processes> ./game_of_life -d <dimension_of_grid> -f <input_file> -l <number_of_loops>\n");
 		} else {
 			printf("dimension size: %d\n", dimension);
 			printf("number of loops: %d\n", loops);
@@ -114,6 +110,7 @@ int main(int argc, char *argv[]) {
 		MPI_Finalize();
 		exit(0);
 	}
+
 	sub_grid_size = calculateSubgridSize(dimension, num_of_proc);
 
 	if (sub_grid_size == -1) {
@@ -126,7 +123,6 @@ int main(int argc, char *argv[]) {
 	} else if (sub_grid_size == -2) {
 		if (rank == 0) {
 			printf("the grid cannot be divided with %d processes\n", num_of_proc);
-			// todo isws valoume proteinomenh timh gia to grid
 		}
 		MPI_Finalize();
 		exit(0);
@@ -136,7 +132,6 @@ int main(int argc, char *argv[]) {
 
 	MPI_Finalize();
 	if (rank == 0) {
-
 		end = clock();
 		cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 		printf("time elapsed: %lf\n", cpu_time_used);
@@ -145,8 +140,3 @@ int main(int argc, char *argv[]) {
 
 	exit(0);
 }
-
-// TODO proper input gia command line arguments
-// TODO svisimo apo print se o8onh kai arxeia
-// TODO paraver gia statistika
-

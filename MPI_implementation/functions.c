@@ -1,17 +1,9 @@
-/*
- * functions.c
- *
- *  Created on: Jul 23, 2017
- *      Author: vangelis
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
-
 #include <math.h>
 
 #include "functions.h"
@@ -52,7 +44,7 @@ void initGrid(int **grid, int dimension) {
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
 			 * 70% possibility to create empty space*/
-			if (r < 30) { //TODO
+			if (r < 30) {
 				grid[i][j] = 1;
 			} else {
 				grid[i][j] = 0;
@@ -62,9 +54,9 @@ void initGrid(int **grid, int dimension) {
 }
 
 void readGrid(int **grid, char* filename, int dimension) {
-	FILE* f;
+	FILE *f;
 	char line[MAXROW + 1];
-	printf("Opening %s...\n", filename); //todo
+	printf("Opening %s...\n", filename);
 	f = fopen(filename, "r");
 	if (!f) {
 		printf("fopen failed\n");
@@ -79,9 +71,9 @@ void readGrid(int **grid, char* filename, int dimension) {
 		int len = strlen(line) - 1;
 		if (len != dimension) {
 			printf("Found line greater than dimension given\n");
-			exit(EXIT_FAILURE); //todo den 3erw kata poso einai swsto na termatizoume etsi
+			exit(EXIT_FAILURE);
 		}
-		for (j = 0; j < len; ++j) {
+		for (j = 0; j < len; j++) {
 			if (line[j] == '*' || line[j] == '1') {
 				grid[i][j] = 1;
 			} else if (line[j] == '.' || line[j] == '0') {
@@ -103,9 +95,9 @@ void printGrid(int **grid, int dimension, int rank, int glob_grid) {
 	i = 0;
 	do {
 		if (glob_grid == 1) {
-			snprintf(filename, 256, "../outputs/grid_(%d)", i);//todo
+			snprintf(filename, 256, "outputs/grid_(%d)", i);
 		} else {
-			snprintf(filename, 256, "../outputs/process_%d_(%d)", rank, i);
+			snprintf(filename, 256, "outputs/process_%d_(%d)", rank, i);
 		}
 		exist = stat(filename, &buffer);
 		if (exist == 0) {
@@ -121,10 +113,8 @@ void printGrid(int **grid, int dimension, int rank, int glob_grid) {
 	for (i = 0; i < dimension; i++) {
 		for (j = 0; j < dimension; j++) {
 			if (grid[i][j] == 1) {
-				//printf("*");
 				fprintf(fd, "*");
 			} else {
-				//printf(".");
 				fprintf(fd, ".");
 			}
 		}

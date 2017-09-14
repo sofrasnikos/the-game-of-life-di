@@ -1,10 +1,3 @@
-/*
- * execute.h
- *
- *  Created on: Aug 8, 2017
- *      Author: vangelis
- */
-
 #ifndef EXECUTE_H_
 #define EXECUTE_H_
 
