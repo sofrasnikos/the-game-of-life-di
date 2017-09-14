@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <omp.h>
 
 #include "execute.h"
 
@@ -32,8 +33,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		if (input_file != NULL) {
 			readGrid(grid, input_file, dimension);
 		}
-		int dir_stat = mkdir("../outputs",
-		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		int dir_stat = mkdir("outputs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if (dir_stat != 0 && errno != EEXIST) {
 			printf("mkdir error %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
@@ -230,29 +230,40 @@ void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_lo
 	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
 	/* Ignore the first row (i == 0) and the last row (i == sub_grid_dimension - 1) */
 	int alive_neighbors;
-	for (i = 1; i < sub_grid_dimension - 1; i++) {
-		/* Ignore the first column (j == 0) and the last column (j == sub_grid_dimension - 1) */
-		for (j = 1; j < sub_grid_dimension - 1; j++) {
-			alive_neighbors = 0;
-			/* Calculate the value of the current cell according to its neighbors */
-			/* Top left neighbor */
-			alive_neighbors += local_grid[i - 1][j - 1];
-			/* Top neighbor */
-			alive_neighbors += local_grid[i - 1][j];
-			/* Top right neighbor */
-			alive_neighbors += local_grid[i - 1][j + 1];
-			/* Right neighbor */
-			alive_neighbors += local_grid[i][j + 1];
-			/* Bot right neighbor */
-			alive_neighbors += local_grid[i + 1][j + 1];
-			/* Bot neighbor */
-			alive_neighbors += local_grid[i + 1][j];
-			/* Bot left neighbor */
-			alive_neighbors += local_grid[i + 1][j - 1];
-			/* Left neighbor */
-			alive_neighbors += local_grid[i][j - 1];
-			me = local_grid[i][j];
-			next_local_grid[i][j] = deadOrAlive(alive_neighbors, me);
+	int pid = getpid();
+	// omp_set_num_threads(2);
+
+	#pragma omp parallel
+	{	
+		int tid = omp_get_thread_num();
+		int total = omp_get_num_threads();
+		// printf("This is thread %d of %d, pid master: %d\n", tid, total, pid);
+		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid) private(j,alive_neighbors,me)
+		for (i = 1; i < sub_grid_dimension - 1; i++) {
+			// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", i, tid, total, pid);
+			/* Ignore the first column (j == 0) and the last column (j == sub_grid_dimension - 1) */
+			for (j = 1; j < sub_grid_dimension - 1; j++) {
+				alive_neighbors = 0;
+				/* Calculate the value of the current cell according to its neighbors */
+				/* Top left neighbor */
+				alive_neighbors += local_grid[i - 1][j - 1];
+				/* Top neighbor */
+				alive_neighbors += local_grid[i - 1][j];
+				/* Top right neighbor */
+				alive_neighbors += local_grid[i - 1][j + 1];
+				/* Right neighbor */
+				alive_neighbors += local_grid[i][j + 1];
+				/* Bot right neighbor */
+				alive_neighbors += local_grid[i + 1][j + 1];
+				/* Bot neighbor */
+				alive_neighbors += local_grid[i + 1][j];
+				/* Bot left neighbor */
+				alive_neighbors += local_grid[i + 1][j - 1];
+				/* Left neighbor */
+				alive_neighbors += local_grid[i][j - 1];
+				me = local_grid[i][j];
+				next_local_grid[i][j] = deadOrAlive(alive_neighbors, me);
+			}
 		}
 	}
 }
