@@ -45,25 +45,13 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			continue;
-		} else if (!strcmp(argv[i], "-m")) {
-			i++;
-			if (argv[i] != NULL) {
-				sub_grid_size = atoi(argv[i]);
-				if (sub_grid_size < 16) {
-					error = 3;
-					break;
-				}
-			} else {
-				error = 4;
-				break;
-			}
-			continue;
-		} else if (!strcmp(argv[i], "-f")) {
+		}
+		else if (!strcmp(argv[i], "-f")) {
 			i++;
 			if (argv[i] != NULL) {
 				input_file = argv[i];
 			} else {
-				error = 5;
+				error = 3;
 				break;
 			}
 			continue;
@@ -72,24 +60,21 @@ int main(int argc, char *argv[]) {
 			if (argv[i] != NULL) {
 				loops = atoi(argv[i]);
 				if (loops <= 0) {
-					error = 6;
+					error = 4;
 					break;
 				}
 			} else {
-				error = 7;
+				error = 5;
 				break;
 			}
 			continue;
 		} else {
-			error = 8;
+			error = 6;
 			break;
 		}
 	}
 	if (dimension == -1) {
 		dimension = DEFAULT_DIMENSION_SIZE;
-	}
-	if (sub_grid_size == -1) {
-		sub_grid_size = MAX_SIDE_LENGTH_OF_SQUARES;
 	}
 	if (loops == -1) {
 		loops = DEFAULT_NUMBER_OF_LOOPS;
@@ -106,21 +91,15 @@ int main(int argc, char *argv[]) {
 				printf("Error: you did not specify dimension size\n");
 				break;
 			case 3:
-				printf("Error: wrong sub grid size\n");
-				break;
-			case 4:
-				printf("Error: you did not specify sub grid size\n");
-				break;
-			case 5:
 				printf("Error: you did not specify input file\n");
 				break;
-			case 6:
+			case 4:
 				printf("Error: wrong number of loops\n");
 				break;
-			case 7:
+			case 5:
 				printf("Error: you did not specify number of loops\n");
 				break;
-			case 8:
+			case 6:
 				printf("Error: unknown argument: %s\n", argv[i]);
 				break;
 			}
@@ -128,28 +107,32 @@ int main(int argc, char *argv[]) {
 					"USAGE:./mpiexec -n <number_of_processes> MPI_implementation -d <dimension_of_grid> -m <sub_grid_size> -f <input_file> -l <number_of_loops>\n");
 		} else {
 			printf("dimension size: %d\n", dimension);
-			printf("sub grid size: %d\n", sub_grid_size);
 			printf("number of loops: %d\n", loops);
 		}
 	}
 	if (error != 0) {
 		MPI_Finalize();
-		//todo
 		exit(0);
 	}
+	sub_grid_size = calculateSubgridSize(dimension, num_of_proc);
 
-	/* Calculate the optimal number of processes that are required */
-	SplitAttributes attributes = processNumber(dimension, sub_grid_size);
-	if (num_of_proc != attributes.number_of_processes) {
+	if (sub_grid_size == -1) {
 		if (rank == 0) {
-			printf("the given grid is %d x %d\nthe optimal number of processes is %d\n", dimension, dimension, attributes.number_of_processes);
-			printf("program exiting...\n");
+			printf("Number of processes must be a perfect square. %d is not. \n", num_of_proc);
+
+		}
+		MPI_Finalize();
+		exit(0);
+	} else if (sub_grid_size == -2) {
+		if (rank == 0) {
+			printf("the grid cannot be divided with %d processes\n", num_of_proc);
+			// todo isws valoume proteinomenh timh gia to grid
 		}
 		MPI_Finalize();
 		exit(0);
 	}
 
-	execute(rank, num_of_proc, dimension, attributes, loops, input_file);
+	execute(rank, num_of_proc, dimension, sub_grid_size, loops, input_file);
 
 	MPI_Finalize();
 	if (rank == 0) {

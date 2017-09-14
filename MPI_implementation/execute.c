@@ -17,26 +17,17 @@
 
 #include "execute.h"
 
-int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes, int loops, char *input_file) {
+int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file) {
 	int i, j, p;
 	int **grid, **local_grid, **next_local_grid;
-	int block_dimension = attributes.length_of_sides;
 	/* The below values are used to split equally the grid
 	 * into blocks which will be assigned to processes */
-	int proc_grid_dimension = dimension / attributes.length_of_sides;
+	int proc_grid_dimension = dimension / sub_grid_dimension;
 	int periods[2], dim_size[2];
 	periods[0] = 1;
 	periods[1] = 1;
 	dim_size[0] = proc_grid_dimension;
 	dim_size[1] = proc_grid_dimension;
-
-	if (num_of_proc != attributes.number_of_processes) {
-		if (rank == 0) {
-			printf("the given grid is %d x %d\nthe optimal number of processes is %d\n", dimension, dimension, attributes.number_of_processes);
-		}
-		MPI_Finalize();
-		exit(0);
-	}
 
 	MPI_Comm comm;
 	MPI_Cart_create(MPI_COMM_WORLD, 2, dim_size, periods, 1, &comm);
@@ -54,21 +45,21 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			printf("mkdir error %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		printf("side = %d\n", block_dimension);
+		printf("side = %d\n", sub_grid_dimension);
 	}
 
 	/* Create a zero array to compare if a local grid has only 0 */
-	int zero_block[block_dimension * block_dimension];
+	int zero_block[sub_grid_dimension * sub_grid_dimension];
 	memset(zero_block, 0, sizeof zero_block);
 
 	/* Create local array */
-	createGrid(&local_grid, block_dimension);
+	createGrid(&local_grid, sub_grid_dimension);
 	/* Create another local grid which will contain the values after the calculations */
-	createGrid(&next_local_grid, block_dimension);
+	createGrid(&next_local_grid, sub_grid_dimension);
 	//INIT
 	/* Create MPI_Datatypes*/
 	MPI_Datatype block_type_1, block_type_2;
-	MPI_Type_vector(block_dimension, block_dimension, dimension, MPI_INT, &block_type_2);
+	MPI_Type_vector(sub_grid_dimension, sub_grid_dimension, dimension, MPI_INT, &block_type_2);
 	MPI_Type_create_resized(block_type_2, 0, sizeof(int), &block_type_1);
 	MPI_Type_commit(&block_type_1);
 
@@ -83,11 +74,11 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	/* Scatter the grid */
 	for (i = 0; i < proc_grid_dimension; i++) {
 		for (j = 0; j < proc_grid_dimension; j++) {
-			displs[i * proc_grid_dimension + j] = i * dimension * block_dimension + j * block_dimension;
+			displs[i * proc_grid_dimension + j] = i * dimension * sub_grid_dimension + j * sub_grid_dimension;
 			sendcounts[i * proc_grid_dimension + j] = 1;
 		}
 	}
-	MPI_Scatterv(ptr_to_grid, sendcounts, displs, block_type_1, &(local_grid[0][0]), block_dimension * block_dimension, MPI_INT, 0,
+	MPI_Scatterv(ptr_to_grid, sendcounts, displs, block_type_1, &(local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, 0,
 	MPI_COMM_WORLD);
 
 	/* Print grid */
@@ -101,7 +92,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 //	int p;
 //	for (p = 0; p < num_of_proc; p++) {
 //		if (rank == p) {
-//			printGrid(local_grid, block_dimension, rank, 0);
+//			printGrid(local_grid, sub_grid_dimension, rank, 0);
 //		}
 //		MPI_Barrier(MPI_COMM_WORLD);
 //	}
@@ -138,7 +129,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	MPI_Cart_rank(comm, bot_left, &bot_left_rank);
 	MPI_Cart_rank(comm, bot_right, &bot_right_rank);
 	MPI_Datatype for_columns;
-	MPI_Type_vector(block_dimension, 1, block_dimension, MPI_INT, &for_columns);
+	MPI_Type_vector(sub_grid_dimension, 1, sub_grid_dimension, MPI_INT, &for_columns);
 	MPI_Type_commit(&for_columns);
 	MPI_Status status;
 	MPI_Request request;
@@ -156,7 +147,7 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 		}
 	}
 
-	int top_buff[block_dimension], bot_buff[block_dimension], left_buff[block_dimension], right_buff[block_dimension];
+	int top_buff[sub_grid_dimension], bot_buff[sub_grid_dimension], left_buff[sub_grid_dimension], right_buff[sub_grid_dimension];
 	int top_left_value, top_right_value, bot_left_value, bot_right_value;
 	int generation = 1;
 	continue_next_gen = 1;
@@ -165,48 +156,48 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			printf("Generation: %d\n", generation);
 		}
 		// Send to all eight neighbors
-		MPI_Isend(&local_grid[0][0], block_dimension, MPI_INT, top_rank, 0,
+		MPI_Isend(&local_grid[0][0], sub_grid_dimension, MPI_INT, top_rank, 0,
 		MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[block_dimension - 1][0], block_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[sub_grid_dimension - 1][0], sub_grid_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &request);
 
 		// Left and right are special cases because items in columns are not contiguous
 		MPI_Isend(&local_grid[0][0], 1, for_columns, left_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[0][block_dimension - 1], 1, for_columns, right_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[0][sub_grid_dimension - 1], 1, for_columns, right_rank, 0, MPI_COMM_WORLD, &request);
 		MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[0][block_dimension - 1], 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[block_dimension - 1][0], 1, MPI_INT, bot_left_rank, 0,
+		MPI_Isend(&local_grid[0][sub_grid_dimension - 1], 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[sub_grid_dimension - 1][0], 1, MPI_INT, bot_left_rank, 0,
 		MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[block_dimension - 1][block_dimension - 1], 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1], 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &request);
 
 		// Calculate the middle cells while waiting to receive from neighbors
-		calculateInnerCells(block_dimension, local_grid, next_local_grid);
+		calculateInnerCells(sub_grid_dimension, local_grid, next_local_grid);
 
 		/* Receive from every neighbor */
-		MPI_Recv(&bot_buff, block_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&top_buff, block_dimension, MPI_INT, top_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&right_buff, block_dimension, MPI_INT, right_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&left_buff, block_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD, &status);
+		MPI_Recv(&bot_buff, sub_grid_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
+		MPI_Recv(&top_buff, sub_grid_dimension, MPI_INT, top_rank, 0, MPI_COMM_WORLD, &status);
+		MPI_Recv(&right_buff, sub_grid_dimension, MPI_INT, right_rank, 0, MPI_COMM_WORLD, &status);
+		MPI_Recv(&left_buff, sub_grid_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&top_right_value, 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &status);
-		calculateEdgeCells(block_dimension, local_grid, next_local_grid, top_buff, right_buff, bot_buff, left_buff, top_left_value, top_right_value,
+		calculateEdgeCells(sub_grid_dimension, local_grid, next_local_grid, top_buff, right_buff, bot_buff, left_buff, top_left_value, top_right_value,
 				bot_left_value, bot_right_value);
 
 		//todo erase
 		//print grids gia dieukolunhsh sto debugging
 //		for (p = 0; p < num_of_proc; p++) {
 //			if (rank == p) {
-//				printGrid(next_local_grid, block_dimension, rank, 0);
+//				printGrid(next_local_grid, sub_grid_dimension, rank, 0);
 //			}
 //		}
 
 		int different = 0;
 		// Check if grid is next_local_grid by checking if it is the same as a grid full of zeros
-		int zero_check = memcmp(zero_block, *next_local_grid, block_dimension * block_dimension * sizeof(int));
+		int zero_check = memcmp(zero_block, *next_local_grid, sub_grid_dimension * sub_grid_dimension * sizeof(int));
 		// If at least one cell is not zero
 		if (zero_check != 0) {
-			different = memcmp(*local_grid, *next_local_grid, block_dimension * block_dimension * sizeof(int));
+			different = memcmp(*local_grid, *next_local_grid, sub_grid_dimension * sub_grid_dimension * sizeof(int));
 			zero_check = 1;
 		}
 		int keep_looping;
@@ -227,16 +218,15 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 			}
 		}
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		MPI_Gatherv(&(next_local_grid[0][0]), block_dimension * block_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
+		MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
 
-//		printGrid2(local_grid, block_dimension, rank, 0);
 		int** temp;
 		temp = &(*next_local_grid);
 		next_local_grid = &(*local_grid);
 		local_grid = temp;
 
-//		for (i = 0; i < block_dimension; ++i) {
-//			for (j = 0; j < block_dimension; ++j) {
+//		for (i = 0; i < sub_grid_dimension; ++i) {
+//			for (j = 0; j < sub_grid_dimension; ++j) {
 //				next_local_grid[i][j] = 0;
 //			}
 //		}
@@ -262,15 +252,15 @@ int execute(int rank, int num_of_proc, int dimension, SplitAttributes attributes
 	return 0;
 }
 
-void calculateInnerCells(int block_dimension, int **local_grid, int **next_local_grid) {
+void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_local_grid) {
 	int i, j;
 	int me;
 	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
-	/* Ignore the first row (i == 0) and the last row (i == block_dimension - 1) */
+	/* Ignore the first row (i == 0) and the last row (i == sub_grid_dimension - 1) */
 	int alive_neighbors;
-	for (i = 1; i < block_dimension - 1; i++) {
-		/* Ignore the first column (j == 0) and the last column (j == block_dimension - 1) */
-		for (j = 1; j < block_dimension - 1; j++) {
+	for (i = 1; i < sub_grid_dimension - 1; i++) {
+		/* Ignore the first column (j == 0) and the last column (j == sub_grid_dimension - 1) */
+		for (j = 1; j < sub_grid_dimension - 1; j++) {
 			alive_neighbors = 0;
 			/* Calculate the value of the current cell according to its neighbors */
 			/* Top left neighbor */
@@ -295,12 +285,12 @@ void calculateInnerCells(int block_dimension, int **local_grid, int **next_local
 	}
 }
 
-void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff, int *left_buff,
+void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff, int *left_buff,
 		int top_left_value, int top_right_value, int bot_left_value, int bot_right_value) {
 	int k;
 	int alive_neighbors = 0;
 	int me;
-	for (k = 1; k < block_dimension - 1; k++) {
+	for (k = 1; k < sub_grid_dimension - 1; k++) {
 		/* TOP ROW */
 		alive_neighbors = 0;
 		/* Calculate the value of the current cell according to its neighbors */
@@ -333,17 +323,17 @@ void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_
 		/* Top right neighbor (the value is borrowed by other process) */
 		alive_neighbors += bot_buff[k + 1];
 		/* Right neighbor */
-		alive_neighbors += local_grid[block_dimension - 1][k + 1];
+		alive_neighbors += local_grid[sub_grid_dimension - 1][k + 1];
 		/* Bot right neighbor */
-		alive_neighbors += local_grid[block_dimension - 2][k + 1];
+		alive_neighbors += local_grid[sub_grid_dimension - 2][k + 1];
 		/* Bot neighbor */
-		alive_neighbors += local_grid[block_dimension - 2][k];
+		alive_neighbors += local_grid[sub_grid_dimension - 2][k];
 		/* Bot left neighbor */
-		alive_neighbors += local_grid[block_dimension - 2][k - 1];
+		alive_neighbors += local_grid[sub_grid_dimension - 2][k - 1];
 		/* Left neighbor */
-		alive_neighbors += local_grid[block_dimension - 1][k - 1];
-		me = local_grid[block_dimension - 1][k];
-		next_local_grid[block_dimension - 1][k] = deadOrAlive(alive_neighbors, me);
+		alive_neighbors += local_grid[sub_grid_dimension - 1][k - 1];
+		me = local_grid[sub_grid_dimension - 1][k];
+		next_local_grid[sub_grid_dimension - 1][k] = deadOrAlive(alive_neighbors, me);
 
 		/* LEFT COLUMN */
 		alive_neighbors = 0;
@@ -377,17 +367,17 @@ void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_
 		/* Top right neighbor (the value is borrowed by other process) */
 		alive_neighbors += right_buff[k + 1];
 		/* Right neighbor */
-		alive_neighbors += local_grid[k + 1][block_dimension - 1];
+		alive_neighbors += local_grid[k + 1][sub_grid_dimension - 1];
 		/* Bot right neighbor */
-		alive_neighbors += local_grid[k + 1][block_dimension - 2];
+		alive_neighbors += local_grid[k + 1][sub_grid_dimension - 2];
 		/* Bot neighbor */
-		alive_neighbors += local_grid[k][block_dimension - 2];
+		alive_neighbors += local_grid[k][sub_grid_dimension - 2];
 		/* Bot left neighbor */
-		alive_neighbors += local_grid[k - 1][block_dimension - 2];
+		alive_neighbors += local_grid[k - 1][sub_grid_dimension - 2];
 		/* Left neighbor */
-		alive_neighbors += local_grid[k - 1][block_dimension - 1];
-		me = local_grid[k][block_dimension - 1];
-		next_local_grid[k][block_dimension - 1] = deadOrAlive(alive_neighbors, me);
+		alive_neighbors += local_grid[k - 1][sub_grid_dimension - 1];
+		me = local_grid[k][sub_grid_dimension - 1];
+		next_local_grid[k][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
 	}
 	/* TOP LEFT CELL */
 	alive_neighbors = 0;
@@ -415,9 +405,9 @@ void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_
 	alive_neighbors = 0;
 	/* Calculate the value of the current cell according to its neighbors */
 	/* Top left neighbor (the value is borrowed by other process) */
-	alive_neighbors += top_buff[block_dimension - 2];
+	alive_neighbors += top_buff[sub_grid_dimension - 2];
 	/* Top neighbor (the value is borrowed by other process) */
-	alive_neighbors += top_buff[block_dimension - 1];
+	alive_neighbors += top_buff[sub_grid_dimension - 1];
 	/* Top right neighbor (the value is borrowed by other process) */
 	alive_neighbors += top_right_value;
 	/* Right neighbor (the value is borrowed by other process) */
@@ -425,13 +415,13 @@ void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_
 	/* Bot right neighbor (the value is borrowed by other process) */
 	alive_neighbors += right_buff[1];
 	/* Bot neighbor */
-	alive_neighbors += local_grid[1][block_dimension - 1];
+	alive_neighbors += local_grid[1][sub_grid_dimension - 1];
 	/* Bot left neighbor */
-	alive_neighbors += local_grid[1][block_dimension - 2];
+	alive_neighbors += local_grid[1][sub_grid_dimension - 2];
 	/* Left neighbor */
-	alive_neighbors += local_grid[0][block_dimension - 2]; /* edw exei allagh */
-	me = local_grid[0][block_dimension - 1];
-	next_local_grid[0][block_dimension - 1] = deadOrAlive(alive_neighbors, me);
+	alive_neighbors += local_grid[0][sub_grid_dimension - 2]; /* edw exei allagh */
+	me = local_grid[0][sub_grid_dimension - 1];
+	next_local_grid[0][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
 
 	/* BOTTOM RIGHT CELL */
 	alive_neighbors = 0;
@@ -439,35 +429,35 @@ void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_
 	 * (this is special case, to calculate next round we need bot_right_value) */
 	/* Calculate the value of the current cell according to its neighbors */
 	/* Top left neighbor */
-	alive_neighbors += local_grid[block_dimension - 2][block_dimension - 2];
+	alive_neighbors += local_grid[sub_grid_dimension - 2][sub_grid_dimension - 2];
 	/* Top neighbor */
-	alive_neighbors += local_grid[block_dimension - 2][block_dimension - 1];
+	alive_neighbors += local_grid[sub_grid_dimension - 2][sub_grid_dimension - 1];
 	/* Top right neighbor (the value is borrowed by other process) */
-	alive_neighbors += right_buff[block_dimension - 2];
+	alive_neighbors += right_buff[sub_grid_dimension - 2];
 	/* Right neighbor (the value is borrowed by other process) */
-	alive_neighbors += right_buff[block_dimension - 1];
+	alive_neighbors += right_buff[sub_grid_dimension - 1];
 	/* Bot right neighbor (the value is borrowed by other process) */
 	alive_neighbors += bot_right_value;
 	/* Bot neighbor (the value is borrowed by other process) */
-	alive_neighbors += bot_buff[block_dimension - 1];
+	alive_neighbors += bot_buff[sub_grid_dimension - 1];
 	/* Bot left neighbor (the value is borrowed by other process) */
-	alive_neighbors += bot_buff[block_dimension - 2];
+	alive_neighbors += bot_buff[sub_grid_dimension - 2];
 	/* Left neighbor */
-	alive_neighbors += local_grid[block_dimension - 1][block_dimension - 2];
-	me = local_grid[block_dimension - 1][block_dimension - 1];
-	next_local_grid[block_dimension - 1][block_dimension - 1] = deadOrAlive(alive_neighbors, me);
+	alive_neighbors += local_grid[sub_grid_dimension - 1][sub_grid_dimension - 2];
+	me = local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1];
+	next_local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
 
 	/* BOTTOM LEFT CELL */
 	alive_neighbors = 0;
 	/* Calculate the value of the current cell according to its neighbors */
 	/* Top left neighbor (the value is borrowed by other process) */
-	alive_neighbors += left_buff[block_dimension - 2]; /* edw exei allagh */
+	alive_neighbors += left_buff[sub_grid_dimension - 2]; /* edw exei allagh */
 	/* Top neighbor */
-	alive_neighbors += local_grid[block_dimension - 2][0];
+	alive_neighbors += local_grid[sub_grid_dimension - 2][0];
 	/* Top right neighbor */
-	alive_neighbors += local_grid[block_dimension - 2][1];
+	alive_neighbors += local_grid[sub_grid_dimension - 2][1];
 	/* Right neighbor */
-	alive_neighbors += local_grid[block_dimension - 1][1];
+	alive_neighbors += local_grid[sub_grid_dimension - 1][1];
 	/* Bot right neighbor (the value is borrowed by other process) */
 	alive_neighbors += bot_buff[1];
 	/* Bot neighbor (the value is borrowed by other process) */
@@ -475,10 +465,10 @@ void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_
 	/* Bot left neighbor (the value is borrowed by other process) */
 	alive_neighbors += bot_left_value;
 	/* Left neighbor (the value is borrowed by other process) */
-	alive_neighbors += left_buff[block_dimension - 1];
+	alive_neighbors += left_buff[sub_grid_dimension - 1];
 	/* If it is empty space */
-	me = next_local_grid[block_dimension - 1][0];
-	next_local_grid[block_dimension - 1][0] = deadOrAlive(alive_neighbors, me);
+	me = next_local_grid[sub_grid_dimension - 1][0];
+	next_local_grid[sub_grid_dimension - 1][0] = deadOrAlive(alive_neighbors, me);
 }
 
 int deadOrAlive(int alive_neighbors, int status) {

@@ -12,6 +12,8 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+#include <math.h>
+
 #include "functions.h"
 
 int createGrid(int ***grid, int dimension) {
@@ -62,7 +64,7 @@ void initGrid(int **grid, int dimension) {
 void readGrid(int **grid, char* filename, int dimension) {
 	FILE* f;
 	char line[MAXROW + 1];
-	printf("Opening %s...\n", filename);
+	printf("Opening %s...\n", filename); //todo
 	f = fopen(filename, "r");
 	if (!f) {
 		printf("fopen failed\n");
@@ -101,7 +103,7 @@ void printGrid(int **grid, int dimension, int rank, int glob_grid) {
 	i = 0;
 	do {
 		if (glob_grid == 1) {
-			snprintf(filename, 256, "../outputs/grid_(%d)", i);
+			snprintf(filename, 256, "../outputs/grid_(%d)", i);//todo
 		} else {
 			snprintf(filename, 256, "../outputs/process_%d_(%d)", rank, i);
 		}
@@ -132,64 +134,23 @@ void printGrid(int **grid, int dimension, int rank, int glob_grid) {
 	free(filename);
 }
 
-void printGrid2(int **grid, int dimension, int rank, int glob_grid) {
-	int i, j;
-	char *filename = malloc(sizeof(char) * 256);
-	struct stat buffer;
-	int exist;
-	i = 0;
-	do {
-		if (glob_grid == 1) {
-			snprintf(filename, 256, "../outputs/grid_(%d)", i);
-		} else {
-			snprintf(filename, 256, "../outputs/process_%d_(%d)", rank, i);
-		}
-		exist = stat(filename, &buffer);
-		if (exist == 0) {
-			i++;
-		}
-	} while (exist == 0);
-
-	FILE *fd = fopen(filename, "w+");
-	if (!fd) {
-		printf("fopen failed\n");
-		exit(EXIT_FAILURE);
+int calculateSubgridSize(int dimension, int number_of_processes) {
+	int int_root;
+	float float_root;
+	int subGridSize;
+	int remainder;
+	float_root = sqrt((double) number_of_processes);
+	int_root = float_root;
+	// Check if number_of_processes is a perfect square
+	// if it's not
+	if (int_root != float_root) {
+		return -1;
 	}
-	for (i = 0; i < dimension; i++) {
-		for (j = 0; j < dimension; j++) {
-			if (grid[i][j] == 1) {
-				//printf("*");
-				fprintf(fd, "*");
-			} else if (grid[i][j] == 0) {
-				//printf(".");
-				fprintf(fd, ".");
-			} else {
-				fprintf(fd, "#");
-			}
-		}
-		fprintf(fd, "\n");
+	subGridSize = dimension / int_root;
+	remainder = dimension % int_root;
+	if (remainder != 0) {
+		return -2;
 	}
-	fclose(fd);
-	free(filename);
+	return subGridSize;
 }
 
-/* This works only for squares*/
-SplitAttributes processNumber(int dimension, int sub_grid_size) {
-	SplitAttributes attributes;
-	int x, x_square, inner_number_of_squares, square_side_length;
-	int n_square = dimension * dimension;
-
-	for (x = 1; x <= sub_grid_size; x++) {
-		x_square = x * x;
-//printf("x == %d, x_square == %d\n", x, x_square);
-		if (n_square % x_square == 0) {
-			inner_number_of_squares = n_square / x_square;
-//			printf("number of proc %d, length of side %d\n", inner_number_of_squares, x);
-			square_side_length = x;
-		}
-	}
-
-	attributes.length_of_sides = square_side_length;
-	attributes.number_of_processes = inner_number_of_squares;
-	return attributes;
-}
