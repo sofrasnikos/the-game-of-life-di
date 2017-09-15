@@ -3,7 +3,7 @@
 
 #include "functions.h"
 
-int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file);
+int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled);
 
 void calculateInnerCells(int block_dimension, int **local_grid, int **next_local_grid);
 

@@ -10,7 +10,7 @@
 
 #include "execute.h"
 
-int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file) {
+int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled) {
 	int i, j, p;
 	int **grid, **local_grid, **next_local_grid;
 	/* The below values are used to split equally the grid
@@ -32,8 +32,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		if (input_file != NULL) {
 			readGrid(grid, input_file, dimension);
 		}
-		int dir_stat = mkdir("../outputs",
-		S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		int dir_stat = mkdir("outputs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 		if (dir_stat != 0 && errno != EEXIST) {
 			printf("mkdir error %s\n", strerror(errno));
 			exit(EXIT_FAILURE);
@@ -76,7 +75,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 
 	//todo make this optional
 	/* Print grid */
-	if (rank == 0) {
+	if (rank == 0 && prints_enabled == 1) {
 		printGrid(grid, dimension, rank, 1);
 	}
 
@@ -195,7 +194,9 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		//todo make this optional
-		MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
+		if(prints_enabled == 1){
+			MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
+		}
 
 		int** temp;
 		temp = &(*next_local_grid);
@@ -203,7 +204,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		local_grid = temp;
 
 		//todo make this optional
-		if (rank == 0) {
+		if (rank == 0 && prints_enabled == 1) {
 			printGrid(grid, dimension, rank, 1);
 		}
 		generation++;
