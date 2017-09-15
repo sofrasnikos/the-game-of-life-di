@@ -11,7 +11,7 @@
 
 #include "execute.h"
 
-int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file) {
+int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled) {
 	int i, j, p;
 	int **grid, **local_grid, **next_local_grid;
 	/* The below values are used to split equally the grid
@@ -76,7 +76,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 
 	//todo make this optional
 	/* Print grid */
-	if (rank == 0) {
+	if (rank == 0 && prints_enabled == 1) {
 		printGrid(grid, dimension, rank, 1);
 	}
 
@@ -195,7 +195,9 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		//todo make this optional
-		MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
+		if(prints_enabled == 1){
+			MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
+		}
 
 		int** temp;
 		temp = &(*next_local_grid);
@@ -203,7 +205,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		local_grid = temp;
 
 		//todo make this optional
-		if (rank == 0) {
+		if (rank == 0 && prints_enabled == 1) {
 			printGrid(grid, dimension, rank, 1);
 		}
 		generation++;
@@ -279,7 +281,7 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 		int total = omp_get_num_threads();
 		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid, top_buff, bot_buff, left_buff, right_buff) private(k, alive_neighbors, me)
 		for (k = 1; k < sub_grid_dimension - 1; k++) {
-			printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
+			// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
 			/* TOP ROW */
 			alive_neighbors = 0;
 			/* Calculate the value of the current cell according to its neighbors */

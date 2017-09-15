@@ -17,6 +17,7 @@ int main(int argc, char *argv[]) {
 	int i;
 	int rank, num_of_proc;
 	int dimension = -1, sub_grid_size = -1, loops = -1;
+	int prints_enabled = 0;
 	char *input_file = NULL;
 	int error = 0;
 
@@ -62,6 +63,9 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			continue;
+		} else if (!strcmp(argv[i], "-p")) {
+			prints_enabled = 1;
+			continue;
 		} else {
 			error = 6;
 			break;
@@ -100,7 +104,12 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			printf(
-					"USAGE:mpiexec -np <number_of_processes> ./game_of_life -d <dimension_of_grid> -f <input_file> -l <number_of_loops>\n");
+					"\nUSAGE:mpiexec -np <number_of_processes> ./game_of_life -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
+			printf("\nFLAGS\n");
+			printf("-d <dimension_of_grid> : This flag sets up the size of the grid. If it is not set up, the program will use %d as deafault value.\n",DEFAULT_DIMENSION_SIZE);
+			printf("-f <input_file> : This flag forces the program to start from an initial state of grid, that is in the file which user gives\n");
+			printf("-l <number_of_loops> : This flag determines the generations that will be completed\n");
+			printf("-p : (OPTIONAL FLAG) This flag forces the program to print the generations to output files. ATTENTION! This flag causes major slowdown to the execution!\n");
 		} else {
 			printf("dimension size: %d\n", dimension);
 			printf("number of loops: %d\n", loops);
@@ -128,7 +137,7 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	execute(rank, num_of_proc, dimension, sub_grid_size, loops, input_file);
+	execute(rank, num_of_proc, dimension, sub_grid_size, loops, input_file, prints_enabled);
 
 	MPI_Finalize();
 	if (rank == 0) {
