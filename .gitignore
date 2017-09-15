@@ -27,6 +27,8 @@
 *.i*86
 *.x86_64
 *.hex
+MPI_implementation/game_of_life
+MPI_OpenMP_implementation/game_of_life
 
 # Debug files/directories
 *.dSYM/
