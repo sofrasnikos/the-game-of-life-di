@@ -9,10 +9,11 @@
 
 int main(int argc, char *argv[]) {
 
-	clock_t start, end;
-	double cpu_time_used;
-	start = clock();
+	// clock_t start, end;
+	// double cpu_time_used;
+	// start = clock();
 	srand(time(NULL));
+	double start_time = MPI_Wtime();
 
 	int i;
 	int rank, num_of_proc;
@@ -141,9 +142,10 @@ int main(int argc, char *argv[]) {
 
 	MPI_Finalize();
 	if (rank == 0) {
-		end = clock();
-		cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-		printf("time elapsed: %lf\n", cpu_time_used);
+		// end = clock();
+		// cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+		double time = MPI_Wtime() - start_time;
+		printf("time elapsed: %lf\n", time);
 		printf("Terminated successfully\n");
 	}
 
