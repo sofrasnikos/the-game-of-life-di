@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <omp.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
@@ -9,10 +10,11 @@
 
 int main(int argc, char *argv[]) {
 
-	clock_t start, end;
-	double cpu_time_used;
-	start = clock();
+	// clock_t start, end;
+	// double cpu_time_used;
+	// start = clock();
 	srand(time(NULL));
+	double start_time = omp_get_wtime();
 
 	int i;
 	int rank, num_of_proc;
@@ -21,7 +23,9 @@ int main(int argc, char *argv[]) {
 	char *input_file = NULL;
 	int error = 0;
 
-	MPI_Init(&argc, &argv);
+	int provided;
+	// MPI_Init(&argc, &argv);
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
 
@@ -141,9 +145,10 @@ int main(int argc, char *argv[]) {
 
 	MPI_Finalize();
 	if (rank == 0) {
-		end = clock();
-		cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-		printf("time elapsed: %lf\n", cpu_time_used);
+		// end = clock();
+		// cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+		double time = omp_get_wtime() - start_time;
+		printf("time elapsed: %lf\n", time);
 		printf("Terminated successfully\n");
 	}
 

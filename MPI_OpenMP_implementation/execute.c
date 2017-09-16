@@ -238,7 +238,7 @@ void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_lo
 	{	
 		int tid = omp_get_thread_num();
 		int total = omp_get_num_threads();
-		printf("This is thread %d of %d, pid master: %d\n", tid, total, pid);
+		// printf("This is thread %d of %d, pid master: %d\n", tid, total, pid);
 		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid) private(j,alive_neighbors,me)
 		for (i = 1; i < sub_grid_dimension - 1; i++) {
 			// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", i, tid, total, pid);
