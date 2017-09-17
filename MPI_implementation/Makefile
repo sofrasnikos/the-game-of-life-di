@@ -1,7 +1,7 @@
 ######################################################################
 OBJS 	= main.o execute.o functions.o
 SOURCE	= main.c execute.c functions.c
-HEADER  = execute.h functions.h
+HEADER  = execute.h functions.h definitions.h
 OUT  	= game_of_life
 CC	= mpicc
 FLAGS   = -g -lm
