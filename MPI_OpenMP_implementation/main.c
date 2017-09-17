@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
 	double start_time = omp_get_wtime();
 
 	int i;
-	int rank, num_of_proc;
+	int rank, num_of_proc, num_of_threads = -1;
 	int dimension = -1, sub_grid_size = -1, loops = -1;
 	int prints_enabled = 0;
 	char *input_file = NULL;
@@ -67,11 +67,24 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			continue;
+		} else if (!strcmp(argv[i], "-t")) {
+			i++;
+			if (argv[i] != NULL) {
+				num_of_threads = atoi(argv[i]);
+				if (num_of_threads <= 0) {
+					error = 6;
+					break;
+				}
+			} else {
+				error = 7;
+				break;
+			}
+			continue;
 		} else if (!strcmp(argv[i], "-p")) {
 			prints_enabled = 1;
 			continue;
 		} else {
-			error = 6;
+			error = 8;
 			break;
 		}
 	}
@@ -82,6 +95,9 @@ int main(int argc, char *argv[]) {
 	}
 	if (loops == -1) {
 		loops = DEFAULT_NUMBER_OF_LOOPS;
+	}
+	if(num_of_threads == -1){
+		num_of_threads = NUM_OF_THREADS;
 	}
 
 	// Print error messages if you are root process
@@ -104,15 +120,22 @@ int main(int argc, char *argv[]) {
 				printf("Error: you did not specify number of loops\n");
 				break;
 			case 6:
+				printf("Error: wrong number of threads\n");
+				break;
+			case 7:
+				printf("Error: you did not specify number of threads\n");
+				break;
+			case 8:
 				printf("Error: unknown argument: %s\n", argv[i]);
 				break;
 			}
 			printf(
-					"\nUSAGE:mpiexec -np <number_of_processes> ./game_of_life -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
+					"\nUSAGE: mpirun -np <number_of_processes> ./game_of_life -t <number_of_threads> -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
 			printf("\nFLAGS\n");
-			printf("-d <dimension_of_grid> : This flag sets up the size of the grid. If it is not set up, the program will use %d as deafault value.\n",DEFAULT_DIMENSION_SIZE);
-			printf("-f <input_file> : This flag forces the program to start from an initial state of grid, that is in the file which user gives\n");
-			printf("-l <number_of_loops> : This flag determines the generations that will be completed\n");
+			printf("-t <number_of_threads> : This flag defines the number of threads that the program will use. If it is not set up the program will use %d threads\n", NUM_OF_THREADS);
+			printf("-d <dimension_of_grid> : This flag sets up the size of the grid. If it is not set up, the program will use %d as deafault value.\n", DEFAULT_DIMENSION_SIZE);
+			printf("-f <input_file> : This flag forces the program to read an initial state of grid from file, and use it as the first generation.\n");
+			printf("-l <number_of_loops> : This flag determines the generations that will be completed.\n");
 			printf("-p : (OPTIONAL FLAG) This flag forces the program to print the generations to output files. ATTENTION! This flag causes major slowdown to the execution!\n");
 		} else {
 			printf("dimension size: %d\n", dimension);
@@ -141,7 +164,7 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	execute(rank, num_of_proc, dimension, sub_grid_size, loops, input_file, prints_enabled);
+	execute(rank, num_of_proc, num_of_threads, dimension, sub_grid_size, loops, input_file, prints_enabled);
 
 	MPI_Finalize();
 	if (rank == 0) {
@@ -154,3 +177,6 @@ int main(int argc, char *argv[]) {
 
 	exit(0);
 }
+
+//TODO o parser 8elei patch. otan exeis kati tou tupou "-d -l 1000" vgazei Error: wrong dimension size
+

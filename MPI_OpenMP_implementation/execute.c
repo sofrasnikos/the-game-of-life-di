@@ -11,7 +11,7 @@
 
 #include "execute.h"
 
-int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled) {
+int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled) {
 	int i, j, p;
 	int **grid, **local_grid, **next_local_grid;
 	/* The below values are used to split equally the grid
@@ -153,7 +153,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		MPI_Isend(&local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1], 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &request);
 
 		// Calculate the middle cells while waiting to receive from neighbors
-		calculateInnerCells(sub_grid_dimension, local_grid, next_local_grid);
+		calculateInnerCells(sub_grid_dimension, local_grid, next_local_grid, num_of_threads);
 
 		/* Receive from every neighbor */
 		MPI_Recv(&bot_buff, sub_grid_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
@@ -164,8 +164,9 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&top_right_value, 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &status);
 		MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &status);
+
 		calculateEdgeCells(sub_grid_dimension, local_grid, next_local_grid, top_buff, right_buff, bot_buff, left_buff, top_left_value, top_right_value,
-				bot_left_value, bot_right_value);
+				bot_left_value, bot_right_value, num_of_threads);
 
 		int different = 0;
 		// Check if grid is next_local_grid by checking if it is the same as a grid full of zeros
@@ -226,19 +227,19 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	return 0;
 }
 
-void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_local_grid) {
+void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_local_grid, int num_of_threads) {
 	int i, j;
 	int me;
 	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
 	/* Ignore the first row (i == 0) and the last row (i == sub_grid_dimension - 1) */
 	int alive_neighbors;
 	int pid = getpid();
-	// omp_set_num_threads(2);
+	omp_set_num_threads(num_of_threads);
 	#pragma omp parallel
 	{	
 		int tid = omp_get_thread_num();
 		int total = omp_get_num_threads();
-		// printf("This is thread %d of %d, pid master: %d\n", tid, total, pid);
+		printf("This is thread %d of %d, pid master: %d\n", tid, total, pid);
 		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid) private(j,alive_neighbors,me)
 		for (i = 1; i < sub_grid_dimension - 1; i++) {
 			// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", i, tid, total, pid);
@@ -270,18 +271,19 @@ void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_lo
 }
 
 void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff, int *left_buff,
-		int top_left_value, int top_right_value, int bot_left_value, int bot_right_value) {
+		int top_left_value, int top_right_value, int bot_left_value, int bot_right_value, int num_of_threads) {
 	int k;
 	int alive_neighbors = 0;
 	int me;
 	int pid = getpid();
+	omp_set_num_threads(num_of_threads);
 	#pragma omp parallel
 	{	
 		int tid = omp_get_thread_num();
 		int total = omp_get_num_threads();
 		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid, top_buff, bot_buff, left_buff, right_buff) private(k, alive_neighbors, me)
 		for (k = 1; k < sub_grid_dimension - 1; k++) {
-			// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
+			printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
 			/* TOP ROW */
 			alive_neighbors = 0;
 			/* Calculate the value of the current cell according to its neighbors */
