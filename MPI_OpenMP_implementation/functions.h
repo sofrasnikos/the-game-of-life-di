@@ -1,9 +1,7 @@
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
-#define MAXROW 10000
-#define DEFAULT_DIMENSION_SIZE 200
-#define DEFAULT_NUMBER_OF_LOOPS 10
+#include "definitions.h"
 
 int createGrid(int ***grid, int dimension);
 void freeGrid(int ***grid);
