@@ -14,7 +14,6 @@ int main(int argc, char *argv[]) {
 	// double cpu_time_used;
 	// start = clock();
 	srand(time(NULL));
-	double start_time = omp_get_wtime();
 
 	int i;
 	int rank, num_of_proc, num_of_threads = -1;
@@ -28,6 +27,8 @@ int main(int argc, char *argv[]) {
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
+
+	double start_time = omp_get_wtime();
 
 	// Parse arguments
 	for (i = 1; i < argc; i++) {

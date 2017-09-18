@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
 	// double cpu_time_used;
 	// start = clock();
 	srand(time(NULL));
-	double start_time = MPI_Wtime();
+	
 
 	int i;
 	int rank, num_of_proc;
@@ -26,6 +26,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
 
+	double start_time = MPI_Wtime();
+	
 	// Parse arguments
 	for (i = 1; i < argc; i++) {
 		if (!strcmp(argv[i], "-d")) {
