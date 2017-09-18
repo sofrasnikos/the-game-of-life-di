@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
 
 	execute(rank, num_of_proc, num_of_threads, dimension, sub_grid_size, loops, input_file, prints_enabled);
 
-	MPI_Finalize();
+	
 	if (rank == 0) {
 		// end = clock();
 		// cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
@@ -175,7 +175,8 @@ int main(int argc, char *argv[]) {
 		printf("time elapsed: %lf\n", time);
 		printf("Terminated successfully\n");
 	}
-
+	
+	MPI_Finalize();
 	exit(0);
 }
 
