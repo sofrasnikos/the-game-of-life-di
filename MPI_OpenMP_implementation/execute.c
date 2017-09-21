@@ -235,37 +235,31 @@ void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_lo
 	int alive_neighbors;
 	int pid = getpid();
 	omp_set_num_threads(num_of_threads);
-	#pragma omp parallel
-	{	
-		int tid = omp_get_thread_num();
-		int total = omp_get_num_threads();
-		printf("This is thread %d of %d, pid master: %d\n", tid, total, pid);
-		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid) private(j,alive_neighbors,me)
-		for (i = 1; i < sub_grid_dimension - 1; i++) {
-			// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", i, tid, total, pid);
-			/* Ignore the first column (j == 0) and the last column (j == sub_grid_dimension - 1) */
-			for (j = 1; j < sub_grid_dimension - 1; j++) {
-				alive_neighbors = 0;
-				/* Calculate the value of the current cell according to its neighbors */
-				/* Top left neighbor */
-				alive_neighbors += local_grid[i - 1][j - 1];
-				/* Top neighbor */
-				alive_neighbors += local_grid[i - 1][j];
-				/* Top right neighbor */
-				alive_neighbors += local_grid[i - 1][j + 1];
-				/* Right neighbor */
-				alive_neighbors += local_grid[i][j + 1];
-				/* Bot right neighbor */
-				alive_neighbors += local_grid[i + 1][j + 1];
-				/* Bot neighbor */
-				alive_neighbors += local_grid[i + 1][j];
-				/* Bot left neighbor */
-				alive_neighbors += local_grid[i + 1][j - 1];
-				/* Left neighbor */
-				alive_neighbors += local_grid[i][j - 1];
-				me = local_grid[i][j];
-				next_local_grid[i][j] = deadOrAlive(alive_neighbors, me);
-			}
+	#pragma omp parallel for shared (sub_grid_dimension, next_local_grid, local_grid) private(i, j, alive_neighbors, me)
+	for (i = 1; i < sub_grid_dimension - 1; i++) {
+		// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", i, tid, total, pid);
+		/* Ignore the first column (j == 0) and the last column (j == sub_grid_dimension - 1) */
+		for (j = 1; j < sub_grid_dimension - 1; j++) {
+			alive_neighbors = 0;
+			/* Calculate the value of the current cell according to its neighbors */
+			/* Top left neighbor */
+			alive_neighbors += local_grid[i - 1][j - 1];
+			/* Top neighbor */
+			alive_neighbors += local_grid[i - 1][j];
+			/* Top right neighbor */
+			alive_neighbors += local_grid[i - 1][j + 1];
+			/* Right neighbor */
+			alive_neighbors += local_grid[i][j + 1];
+			/* Bot right neighbor */
+			alive_neighbors += local_grid[i + 1][j + 1];
+			/* Bot neighbor */
+			alive_neighbors += local_grid[i + 1][j];
+			/* Bot left neighbor */
+			alive_neighbors += local_grid[i + 1][j - 1];
+			/* Left neighbor */
+			alive_neighbors += local_grid[i][j - 1];
+			me = local_grid[i][j];
+			next_local_grid[i][j] = deadOrAlive(alive_neighbors, me);
 		}
 	}
 }
@@ -277,101 +271,96 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	int me;
 	int pid = getpid();
 	omp_set_num_threads(num_of_threads);
-	#pragma omp parallel
-	{	
-		int tid = omp_get_thread_num();
-		int total = omp_get_num_threads();
-		#pragma omp parallel for shared (sub_grid_dimension,next_local_grid,local_grid, top_buff, bot_buff, left_buff, right_buff) private(k, alive_neighbors, me)
-		for (k = 1; k < sub_grid_dimension - 1; k++) {
-			printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
-			/* TOP ROW */
-			alive_neighbors = 0;
-			/* Calculate the value of the current cell according to its neighbors */
-			/* Top left neighbor (the value is borrowed by other process) */
-			alive_neighbors += top_buff[k - 1];
-			/* Top neighbor (the value is borrowed by other process) */
-			alive_neighbors += top_buff[k];
-			/* Top right neighbor (the value is borrowed by other process) */
-			alive_neighbors += top_buff[k + 1];
-			/* Right neighbor */
-			alive_neighbors += local_grid[0][k + 1];
-			/* Bot right neighbor */
-			alive_neighbors += local_grid[1][k + 1];
-			/* Bot neighbor */
-			alive_neighbors += local_grid[1][k];
-			/* Bot left neighbor */
-			alive_neighbors += local_grid[1][k - 1];
-			/* Left neighbor */
-			alive_neighbors += local_grid[0][k - 1];
-			me = local_grid[0][k];
-			next_local_grid[0][k] = deadOrAlive(alive_neighbors, me);
+	#pragma omp parallel for shared (sub_grid_dimension, next_local_grid, local_grid, top_buff, bot_buff, left_buff, right_buff) private(k, alive_neighbors, me)
+	for (k = 1; k < sub_grid_dimension - 1; k++) {
+		// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
+		/* TOP ROW */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += top_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += top_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += top_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[0][k + 1];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[1][k + 1];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[1][k];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[1][k - 1];
+		/* Left neighbor */
+		alive_neighbors += local_grid[0][k - 1];
+		me = local_grid[0][k];
+		next_local_grid[0][k] = deadOrAlive(alive_neighbors, me);
 
-			/* BOT ROW */
-			alive_neighbors = 0;
-			/* Calculate the value of the current cell according to its neighbors */
-			/* Top left neighbor (the value is borrowed by other process) */
-			alive_neighbors += bot_buff[k - 1];
-			/* Top neighbor (the value is borrowed by other process) */
-			alive_neighbors += bot_buff[k];
-			/* Top right neighbor (the value is borrowed by other process) */
-			alive_neighbors += bot_buff[k + 1];
-			/* Right neighbor */
-			alive_neighbors += local_grid[sub_grid_dimension - 1][k + 1];
-			/* Bot right neighbor */
-			alive_neighbors += local_grid[sub_grid_dimension - 2][k + 1];
-			/* Bot neighbor */
-			alive_neighbors += local_grid[sub_grid_dimension - 2][k];
-			/* Bot left neighbor */
-			alive_neighbors += local_grid[sub_grid_dimension - 2][k - 1];
-			/* Left neighbor */
-			alive_neighbors += local_grid[sub_grid_dimension - 1][k - 1];
-			me = local_grid[sub_grid_dimension - 1][k];
-			next_local_grid[sub_grid_dimension - 1][k] = deadOrAlive(alive_neighbors, me);
+		/* BOT ROW */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += bot_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += bot_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += bot_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[sub_grid_dimension - 1][k + 1];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[sub_grid_dimension - 2][k + 1];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[sub_grid_dimension - 2][k];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[sub_grid_dimension - 2][k - 1];
+		/* Left neighbor */
+		alive_neighbors += local_grid[sub_grid_dimension - 1][k - 1];
+		me = local_grid[sub_grid_dimension - 1][k];
+		next_local_grid[sub_grid_dimension - 1][k] = deadOrAlive(alive_neighbors, me);
 
-			/* LEFT COLUMN */
-			alive_neighbors = 0;
-			/* Calculate the value of the current cell according to its neighbors */
-			/* Top left neighbor (the value is borrowed by other process) */
-			alive_neighbors += left_buff[k - 1];
-			/* Top neighbor (the value is borrowed by other process) */
-			alive_neighbors += left_buff[k];
-			/* Top right neighbor (the value is borrowed by other process) */
-			alive_neighbors += left_buff[k + 1];
-			/* Right neighbor */
-			alive_neighbors += local_grid[k + 1][0];
-			/* Bot right neighbor */
-			alive_neighbors += local_grid[k + 1][1];
-			/* Bot neighbor */
-			alive_neighbors += local_grid[k][1];
-			/* Bot left neighbor */
-			alive_neighbors += local_grid[k - 1][1];
-			/* Left neighbor */
-			alive_neighbors += local_grid[k - 1][0];
-			me = local_grid[k][0];
-			next_local_grid[k][0] = deadOrAlive(alive_neighbors, me);
+		/* LEFT COLUMN */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += left_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += left_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += left_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[k + 1][0];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[k + 1][1];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[k][1];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[k - 1][1];
+		/* Left neighbor */
+		alive_neighbors += local_grid[k - 1][0];
+		me = local_grid[k][0];
+		next_local_grid[k][0] = deadOrAlive(alive_neighbors, me);
 
-			/* RIGHT COLUMN */
-			alive_neighbors = 0;
-			/* Calculate the value of the current cell according to its neighbors */
-			/* Top left neighbor (the value is borrowed by other process) */
-			alive_neighbors += right_buff[k - 1];
-			/* Top neighbor (the value is borrowed by other process) */
-			alive_neighbors += right_buff[k];
-			/* Top right neighbor (the value is borrowed by other process) */
-			alive_neighbors += right_buff[k + 1];
-			/* Right neighbor */
-			alive_neighbors += local_grid[k + 1][sub_grid_dimension - 1];
-			/* Bot right neighbor */
-			alive_neighbors += local_grid[k + 1][sub_grid_dimension - 2];
-			/* Bot neighbor */
-			alive_neighbors += local_grid[k][sub_grid_dimension - 2];
-			/* Bot left neighbor */
-			alive_neighbors += local_grid[k - 1][sub_grid_dimension - 2];
-			/* Left neighbor */
-			alive_neighbors += local_grid[k - 1][sub_grid_dimension - 1];
-			me = local_grid[k][sub_grid_dimension - 1];
-			next_local_grid[k][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
-		}
+		/* RIGHT COLUMN */
+		alive_neighbors = 0;
+		/* Calculate the value of the current cell according to its neighbors */
+		/* Top left neighbor (the value is borrowed by other process) */
+		alive_neighbors += right_buff[k - 1];
+		/* Top neighbor (the value is borrowed by other process) */
+		alive_neighbors += right_buff[k];
+		/* Top right neighbor (the value is borrowed by other process) */
+		alive_neighbors += right_buff[k + 1];
+		/* Right neighbor */
+		alive_neighbors += local_grid[k + 1][sub_grid_dimension - 1];
+		/* Bot right neighbor */
+		alive_neighbors += local_grid[k + 1][sub_grid_dimension - 2];
+		/* Bot neighbor */
+		alive_neighbors += local_grid[k][sub_grid_dimension - 2];
+		/* Bot left neighbor */
+		alive_neighbors += local_grid[k - 1][sub_grid_dimension - 2];
+		/* Left neighbor */
+		alive_neighbors += local_grid[k - 1][sub_grid_dimension - 1];
+		me = local_grid[k][sub_grid_dimension - 1];
+		next_local_grid[k][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
 	}
 	/* TOP LEFT CELL */
 	alive_neighbors = 0;
