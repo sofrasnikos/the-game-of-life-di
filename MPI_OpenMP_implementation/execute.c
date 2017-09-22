@@ -42,8 +42,15 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 	}
 
 	/* Create a zero array to compare if a local grid has only 0 */
-	int zero_block[sub_grid_dimension * sub_grid_dimension];
-	memset(zero_block, 0, sizeof zero_block);
+	int *zero_block = malloc(sizeof(int) * sub_grid_dimension * sub_grid_dimension);
+	if (zero_block == NULL) {
+		free(zero_block);
+		printf("malloc error %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	memset(zero_block, 0,
+			sizeof(int) * sub_grid_dimension * sub_grid_dimension);
 
 	/* Create local array */
 	createGrid(&local_grid, sub_grid_dimension);
@@ -218,6 +225,7 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 	MPI_Type_free(&block_type_1);
 	MPI_Type_free(&block_type_2);
 	MPI_Type_free(&for_columns);
+	free(zero_block);
 
 	/* Free grid */
 	if (rank == 0) {

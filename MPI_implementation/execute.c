@@ -10,7 +10,8 @@
 
 #include "execute.h"
 
-int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled) {
+int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension,
+		int loops, char *input_file, int prints_enabled) {
 	int i, j, p;
 	int **grid, **local_grid, **next_local_grid;
 	/* The below values are used to split equally the grid
@@ -41,8 +42,15 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	}
 
 	/* Create a zero array to compare if a local grid has only 0 */
-	int zero_block[sub_grid_dimension * sub_grid_dimension];
-	memset(zero_block, 0, sizeof zero_block);
+	int *zero_block = malloc(sizeof(int) * sub_grid_dimension * sub_grid_dimension);
+	if (zero_block == NULL) {
+		free(zero_block);
+		printf("malloc error %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	memset(zero_block, 0,
+			sizeof(int) * sub_grid_dimension * sub_grid_dimension);
 
 	/* Create local array */
 	createGrid(&local_grid, sub_grid_dimension);
@@ -51,7 +59,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	//INIT
 	/* Create MPI_Datatypes*/
 	MPI_Datatype block_type_1, block_type_2;
-	MPI_Type_vector(sub_grid_dimension, sub_grid_dimension, dimension, MPI_INT, &block_type_2);
+	MPI_Type_vector(sub_grid_dimension, sub_grid_dimension, dimension, MPI_INT,
+			&block_type_2);
 	MPI_Type_create_resized(block_type_2, 0, sizeof(int), &block_type_1);
 	MPI_Type_commit(&block_type_1);
 
@@ -66,12 +75,15 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	/* Scatter the grid */
 	for (i = 0; i < proc_grid_dimension; i++) {
 		for (j = 0; j < proc_grid_dimension; j++) {
-			displs[i * proc_grid_dimension + j] = i * dimension * sub_grid_dimension + j * sub_grid_dimension;
+			displs[i * proc_grid_dimension + j] = i * dimension
+					* sub_grid_dimension + j * sub_grid_dimension;
 			sendcounts[i * proc_grid_dimension + j] = 1;
 		}
 	}
-	MPI_Scatterv(ptr_to_grid, sendcounts, displs, block_type_1, &(local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, 0,
-	MPI_COMM_WORLD);
+	MPI_Scatterv(ptr_to_grid, sendcounts, displs, block_type_1,
+			&(local_grid[0][0]), sub_grid_dimension * sub_grid_dimension,
+			MPI_INT, 0,
+			MPI_COMM_WORLD);
 
 	//todo make this optional
 	/* Print grid */
@@ -83,7 +95,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	MPI_Cart_coords(comm, rank, 2, coords);
 
 	/* Determine the neighboring processes*/
-	int top[2], bot[2], left[2], right[2], top_left[2], top_right[2], bot_left[2], bot_right[2];
+	int top[2], bot[2], left[2], right[2], top_left[2], top_right[2],
+			bot_left[2], bot_right[2];
 	top[0] = coords[0] - 1;
 	top[1] = coords[1];
 	bot[0] = coords[0] + 1;
@@ -101,7 +114,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	bot_right[0] = coords[0] + 1;
 	bot_right[1] = coords[1] + 1;
 
-	int top_rank, bot_rank, left_rank, right_rank, top_left_rank, top_right_rank, bot_left_rank, bot_right_rank;
+	int top_rank, bot_rank, left_rank, right_rank, top_left_rank,
+			top_right_rank, bot_left_rank, bot_right_rank;
 	MPI_Cart_rank(comm, top, &top_rank);
 	MPI_Cart_rank(comm, bot, &bot_rank);
 	MPI_Cart_rank(comm, left, &left_rank);
@@ -111,7 +125,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	MPI_Cart_rank(comm, bot_left, &bot_left_rank);
 	MPI_Cart_rank(comm, bot_right, &bot_right_rank);
 	MPI_Datatype for_columns;
-	MPI_Type_vector(sub_grid_dimension, 1, sub_grid_dimension, MPI_INT, &for_columns);
+	MPI_Type_vector(sub_grid_dimension, 1, sub_grid_dimension, MPI_INT,
+			&for_columns);
 	MPI_Type_commit(&for_columns);
 	MPI_Status status;
 	MPI_Request request;
@@ -129,7 +144,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		}
 	}
 
-	int top_buff[sub_grid_dimension], bot_buff[sub_grid_dimension], left_buff[sub_grid_dimension], right_buff[sub_grid_dimension];
+	int top_buff[sub_grid_dimension], bot_buff[sub_grid_dimension],
+			left_buff[sub_grid_dimension], right_buff[sub_grid_dimension];
 	int top_left_value, top_right_value, bot_left_value, bot_right_value;
 	int generation = 1;
 	continue_next_gen = 1;
@@ -140,38 +156,56 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		// Send to all eight neighbors
 		MPI_Isend(&local_grid[0][0], sub_grid_dimension, MPI_INT, top_rank, 0,
 		MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[sub_grid_dimension - 1][0], sub_grid_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[sub_grid_dimension - 1][0], sub_grid_dimension,
+		MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &request);
 
 		// Left and right are special cases because items in columns are not contiguous
-		MPI_Isend(&local_grid[0][0], 1, for_columns, left_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[0][sub_grid_dimension - 1], 1, for_columns, right_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[0][sub_grid_dimension - 1], 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[sub_grid_dimension - 1][0], 1, MPI_INT, bot_left_rank, 0,
+		MPI_Isend(&local_grid[0][0], 1, for_columns, left_rank, 0,
 		MPI_COMM_WORLD, &request);
-		MPI_Isend(&local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1], 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[0][sub_grid_dimension - 1], 1, for_columns,
+				right_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[0][0], 1, MPI_INT, top_left_rank, 0,
+		MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[0][sub_grid_dimension - 1], 1, MPI_INT,
+				top_right_rank, 0, MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[sub_grid_dimension - 1][0], 1, MPI_INT,
+				bot_left_rank, 0,
+				MPI_COMM_WORLD, &request);
+		MPI_Isend(&local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1],
+				1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &request);
 
 		// Calculate the middle cells while waiting to receive from neighbors
 		calculateInnerCells(sub_grid_dimension, local_grid, next_local_grid);
 
 		/* Receive from every neighbor */
-		MPI_Recv(&bot_buff, sub_grid_dimension, MPI_INT, bot_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&top_buff, sub_grid_dimension, MPI_INT, top_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&right_buff, sub_grid_dimension, MPI_INT, right_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&left_buff, sub_grid_dimension, MPI_INT, left_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&top_right_value, 1, MPI_INT, top_right_rank, 0, MPI_COMM_WORLD, &status);
-		MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD, &status);
-		calculateEdgeCells(sub_grid_dimension, local_grid, next_local_grid, top_buff, right_buff, bot_buff, left_buff, top_left_value, top_right_value,
-				bot_left_value, bot_right_value);
+		MPI_Recv(&bot_buff, sub_grid_dimension, MPI_INT, bot_rank, 0,
+		MPI_COMM_WORLD, &status);
+		MPI_Recv(&top_buff, sub_grid_dimension, MPI_INT, top_rank, 0,
+		MPI_COMM_WORLD, &status);
+		MPI_Recv(&right_buff, sub_grid_dimension, MPI_INT, right_rank, 0,
+		MPI_COMM_WORLD, &status);
+		MPI_Recv(&left_buff, sub_grid_dimension, MPI_INT, left_rank, 0,
+		MPI_COMM_WORLD, &status);
+		MPI_Recv(&bot_right_value, 1, MPI_INT, bot_right_rank, 0,
+		MPI_COMM_WORLD, &status);
+		MPI_Recv(&bot_left_value, 1, MPI_INT, bot_left_rank, 0, MPI_COMM_WORLD,
+				&status);
+		MPI_Recv(&top_right_value, 1, MPI_INT, top_right_rank, 0,
+		MPI_COMM_WORLD, &status);
+		MPI_Recv(&top_left_value, 1, MPI_INT, top_left_rank, 0, MPI_COMM_WORLD,
+				&status);
+		calculateEdgeCells(sub_grid_dimension, local_grid, next_local_grid,
+				top_buff, right_buff, bot_buff, left_buff, top_left_value,
+				top_right_value, bot_left_value, bot_right_value);
 
 		int different = 0;
 		// Check if grid is next_local_grid by checking if it is the same as a grid full of zeros
-		int zero_check = memcmp(zero_block, *next_local_grid, sub_grid_dimension * sub_grid_dimension * sizeof(int));
+		int zero_check = memcmp(zero_block, *next_local_grid,
+				sub_grid_dimension * sub_grid_dimension * sizeof(int));
 		// If at least one cell is not zero
 		if (zero_check != 0) {
-			different = memcmp(*local_grid, *next_local_grid, sub_grid_dimension * sub_grid_dimension * sizeof(int));
+			different = memcmp(*local_grid, *next_local_grid,
+					sub_grid_dimension * sub_grid_dimension * sizeof(int));
 			zero_check = 1;
 		}
 		int keep_looping;
@@ -181,7 +215,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		} else {
 			keep_looping = 0;
 		}
-		MPI_Gather(&keep_looping, 1, MPI_INT, dif_array, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Gather(&keep_looping, 1, MPI_INT, dif_array, 1, MPI_INT, 0,
+		MPI_COMM_WORLD);
 		if (rank == 0) {
 			continue_next_gen = 0;
 			for (p = 0; p < num_of_proc; p++) {
@@ -194,8 +229,11 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		//todo make this optional
-		if(prints_enabled == 1){
-			MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_INT, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
+		if (prints_enabled == 1) {
+			MPI_Gatherv(&(next_local_grid[0][0]),
+					sub_grid_dimension * sub_grid_dimension, MPI_INT,
+					ptr_to_grid, sendcounts, displs, block_type_1, 0,
+					MPI_COMM_WORLD);
 		}
 
 		int** temp;
@@ -216,6 +254,7 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	MPI_Type_free(&block_type_1);
 	MPI_Type_free(&block_type_2);
 	MPI_Type_free(&for_columns);
+	free(zero_block);
 
 	/* Free grid */
 	if (rank == 0) {
@@ -225,7 +264,8 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, in
 	return 0;
 }
 
-void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_local_grid) {
+void calculateInnerCells(int sub_grid_dimension, int **local_grid,
+		int **next_local_grid) {
 	int i, j;
 	int me;
 	/* To calculate the middle cells we have to ignore the first row & column and the last row & column */
@@ -258,8 +298,10 @@ void calculateInnerCells(int sub_grid_dimension, int **local_grid, int **next_lo
 	}
 }
 
-void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff, int *left_buff,
-		int top_left_value, int top_right_value, int bot_left_value, int bot_right_value) {
+void calculateEdgeCells(int sub_grid_dimension, int **local_grid,
+		int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff,
+		int *left_buff, int top_left_value, int top_right_value,
+		int bot_left_value, int bot_right_value) {
 	int k;
 	int alive_neighbors = 0;
 	int me;
@@ -306,7 +348,8 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 		/* Left neighbor */
 		alive_neighbors += local_grid[sub_grid_dimension - 1][k - 1];
 		me = local_grid[sub_grid_dimension - 1][k];
-		next_local_grid[sub_grid_dimension - 1][k] = deadOrAlive(alive_neighbors, me);
+		next_local_grid[sub_grid_dimension - 1][k] = deadOrAlive(
+				alive_neighbors, me);
 
 		/* LEFT COLUMN */
 		alive_neighbors = 0;
@@ -350,7 +393,8 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 		/* Left neighbor */
 		alive_neighbors += local_grid[k - 1][sub_grid_dimension - 1];
 		me = local_grid[k][sub_grid_dimension - 1];
-		next_local_grid[k][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
+		next_local_grid[k][sub_grid_dimension - 1] = deadOrAlive(
+				alive_neighbors, me);
 	}
 	/* TOP LEFT CELL */
 	alive_neighbors = 0;
@@ -394,7 +438,8 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	/* Left neighbor */
 	alive_neighbors += local_grid[0][sub_grid_dimension - 2];
 	me = local_grid[0][sub_grid_dimension - 1];
-	next_local_grid[0][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
+	next_local_grid[0][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors,
+			me);
 
 	/* BOTTOM RIGHT CELL */
 	alive_neighbors = 0;
@@ -402,9 +447,11 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	 * (this is special case, to calculate next round we need bot_right_value) */
 	/* Calculate the value of the current cell according to its neighbors */
 	/* Top left neighbor */
-	alive_neighbors += local_grid[sub_grid_dimension - 2][sub_grid_dimension - 2];
+	alive_neighbors +=
+			local_grid[sub_grid_dimension - 2][sub_grid_dimension - 2];
 	/* Top neighbor */
-	alive_neighbors += local_grid[sub_grid_dimension - 2][sub_grid_dimension - 1];
+	alive_neighbors +=
+			local_grid[sub_grid_dimension - 2][sub_grid_dimension - 1];
 	/* Top right neighbor (the value is borrowed by other process) */
 	alive_neighbors += right_buff[sub_grid_dimension - 2];
 	/* Right neighbor (the value is borrowed by other process) */
@@ -416,9 +463,11 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	/* Bot left neighbor (the value is borrowed by other process) */
 	alive_neighbors += bot_buff[sub_grid_dimension - 2];
 	/* Left neighbor */
-	alive_neighbors += local_grid[sub_grid_dimension - 1][sub_grid_dimension - 2];
+	alive_neighbors +=
+			local_grid[sub_grid_dimension - 1][sub_grid_dimension - 2];
 	me = local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1];
-	next_local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1] = deadOrAlive(alive_neighbors, me);
+	next_local_grid[sub_grid_dimension - 1][sub_grid_dimension - 1] =
+			deadOrAlive(alive_neighbors, me);
 
 	/* BOTTOM LEFT CELL */
 	alive_neighbors = 0;
@@ -441,7 +490,8 @@ void calculateEdgeCells(int sub_grid_dimension, int **local_grid, int **next_loc
 	alive_neighbors += left_buff[sub_grid_dimension - 1];
 	/* If it is empty space */
 	me = next_local_grid[sub_grid_dimension - 1][0];
-	next_local_grid[sub_grid_dimension - 1][0] = deadOrAlive(alive_neighbors, me);
+	next_local_grid[sub_grid_dimension - 1][0] = deadOrAlive(alive_neighbors,
+			me);
 }
 
 int deadOrAlive(int alive_neighbors, int status) {
