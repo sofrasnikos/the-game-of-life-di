@@ -12,8 +12,11 @@ int createGrid(char ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
 	char *p = (char *) malloc(dimension * dimension * sizeof(char));
-	if (!p)
-		return -1;
+	if (p == NULL) {
+		free(p);
+		printf("malloc error %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
 
 	/* Allocate rows*/
 	(*grid) = (char **) malloc(dimension * sizeof(char*));
@@ -79,7 +82,9 @@ void readGrid(char **grid, char* filename, int dimension) {
 			} else if (line[j] == '.' || line[j] == '0') {
 				grid[i][j] = 0;
 			} else {
-				printf("Wrong characters found in %s. Accepted characters are: 01.*\n", filename);
+				printf(
+						"Wrong characters found in %s. Accepted characters are: 01.*\n",
+						filename);
 				exit(EXIT_FAILURE);
 			}
 		}

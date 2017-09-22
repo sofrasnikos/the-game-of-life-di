@@ -12,9 +12,12 @@ int createGrid(char ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
 	char *p = (char *) malloc(dimension * dimension * sizeof(char));
-	if (!p)
-		return -1;
-
+	if (p == NULL) {
+		free(p);
+		printf("malloc error %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	
 	/* Allocate rows*/
 	(*grid) = (char **) malloc(dimension * sizeof(char*));
 	if (grid == NULL) {
