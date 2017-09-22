@@ -8,15 +8,15 @@
 
 #include "functions.h"
 
-int createGrid(int ***grid, int dimension) {
+int createGrid(char ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
-	int *p = (int *) malloc(dimension * dimension * sizeof(int));
+	char *p = (char *) malloc(dimension * dimension * sizeof(char));
 	if (!p)
 		return -1;
 
 	/* Allocate rows*/
-	(*grid) = (int **) malloc(dimension * sizeof(int*));
+	(*grid) = (char **) malloc(dimension * sizeof(char*));
 	if (grid == NULL) {
 		free(grid);
 		printf("malloc error %s\n", strerror(errno));
@@ -30,12 +30,12 @@ int createGrid(int ***grid, int dimension) {
 	return 0;
 }
 
-void freeGrid(int ***grid) {
+void freeGrid(char ***grid) {
 	free(&((*grid)[0][0]));
 	free(*grid);
 }
 
-void initGrid(int **grid, int dimension) {
+void initGrid(char **grid, int dimension) {
 	int i, j, r;
 	/* Initialize the grid*/
 	for (i = 0; i < dimension; i++) {
@@ -53,7 +53,7 @@ void initGrid(int **grid, int dimension) {
 	}
 }
 
-void readGrid(int **grid, char* filename, int dimension) {
+void readGrid(char **grid, char* filename, int dimension) {
 	FILE *f;
 	char line[MAXROW + 1];
 	printf("Opening %s...\n", filename);
@@ -87,7 +87,7 @@ void readGrid(int **grid, char* filename, int dimension) {
 	}
 }
 
-void printGrid(int **grid, int dimension, int rank, int glob_grid) {
+void printGrid(char **grid, int dimension, int rank, int glob_grid) {
 	int i, j;
 	char *filename = malloc(sizeof(char) * 256);
 	struct stat buffer;

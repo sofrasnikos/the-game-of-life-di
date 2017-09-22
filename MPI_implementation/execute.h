@@ -5,10 +5,10 @@
 
 int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension, int loops, char *input_file, int prints_enabled);
 
-void calculateInnerCells(int block_dimension, int **local_grid, int **next_local_grid);
+void calculateInnerCells(int block_dimension, char **local_grid, char **next_local_grid);
 
-void calculateEdgeCells(int block_dimension, int **local_grid, int **next_local_grid, int *top_buff, int *right_buff, int *bot_buff, int *left_buff,
-		int top_left_value, int top_right_value, int bot_left_value, int bot_right_value);
+void calculateEdgeCells(int block_dimension, char **local_grid, char **next_local_grid, char *top_buff, char *right_buff, char *bot_buff, char *left_buff,
+		char top_left_value, char top_right_value, char bot_left_value, char bot_right_value);
 
 int deadOrAlive(int alive_neighbors, int status);
 
