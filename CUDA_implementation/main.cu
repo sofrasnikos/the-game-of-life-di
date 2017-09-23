@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 			i++;
 			if (argv[i] != NULL) {
 				dimension = atoi(argv[i]);
-				if (dimension < 16) {
+				if (dimension < 5) {
 					error = 1;
 					break;
 				}

@@ -7,53 +7,23 @@
 
 #include "functions.h"
 
-int createGrid(char ***grid, int dimension) {
+int createGrid(char **grid, int dimension) {
 	int i;
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
-	char *p = (char *) malloc(dimension * dimension * sizeof(char));
-	if (p == NULL) {
+	(*grid) = (char *) malloc(dimension * dimension * sizeof(char));
+	if (grid == NULL) {
 		printf("malloc error %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-
-	/* Allocate rows*/
-	(*grid) = (char **) malloc(dimension * sizeof(char*));
-	if ((*grid) == NULL) {
-		printf("malloc error %s\n", strerror(errno));
-		exit(EXIT_FAILURE);
-	}
-
-	/* Set up the pointers*/
-	for (i = 0; i < dimension; i++) {
-		(*grid)[i] = &(p[i * dimension]);
-	}
-
 	return 0;
-
-	//todo na kanw mikroallages stis alles creategrid!!
-
-	// (*grid) = (char **) malloc(dimension * sizeof(char *));
-	// if ((*grid) == NULL) {
-	// 	printf("malloc error %s\n", strerror(errno));
-	// 	exit(EXIT_FAILURE);
-	// }
-	// for (int i = 0; i < dimension; i++) {
-	// 	(*grid)[i] = (char *) malloc(dimension * sizeof(char));
-	// 	if (((*grid)[i]) == NULL) {
-	// 		printf("malloc error %s\n", strerror(errno));
-	// 		exit(EXIT_FAILURE);
-	// 	}
-	// }
-	// return 0;
 }
 
-void freeGrid(char ***grid) {
-	free(&((*grid)[0][0]));
+void freeGrid(char **grid) {
 	free(*grid);
 }
 
-void initGrid(char **grid, int dimension) {
+void initGrid(char *grid, int dimension) {
 	int i, j, r;
 	/* Initialize the grid*/
 	for (i = 0; i < dimension; i++) {
@@ -62,10 +32,10 @@ void initGrid(char **grid, int dimension) {
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
 			 * 70% possibility to create empty space*/
-			if (r < 30) {
-				grid[i][j] = 1;
+			if (r < 1) {
+				grid[i * dimension + j] = 1;
 			} else {
-				grid[i][j] = 0;
+				grid[i * dimension + j] = 0;
 			}
 		}
 	}
