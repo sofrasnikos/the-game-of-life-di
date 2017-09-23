@@ -42,3 +42,4 @@ MPI_OpenMP_implementation/game_of_life
 
 #Output Directories
 *outputs/
+CUDA_implementation/test
