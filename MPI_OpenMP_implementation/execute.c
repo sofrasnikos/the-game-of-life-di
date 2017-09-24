@@ -33,10 +33,12 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 		if (input_file != NULL) {
 			readGrid(grid, input_file, dimension);
 		}
-		int dir_stat = mkdir("outputs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-		if (dir_stat != 0 && errno != EEXIST) {
-			printf("mkdir error %s\n", strerror(errno));
-			exit(EXIT_FAILURE);
+		if (prints_enabled == 1) {
+			int dir_stat = mkdir("outputs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+			if (dir_stat != 0 && errno != EEXIST) {
+				printf("mkdir error %s\n", strerror(errno));
+				exit(EXIT_FAILURE);
+			}
 		}
 		printf("block size: %d\n", sub_grid_dimension);
 	}
@@ -81,8 +83,7 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 	MPI_Scatterv(ptr_to_grid, sendcounts, displs, block_type_1, &(local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_CHAR, 0,
 	MPI_COMM_WORLD);
 
-	//todo make this optional
-	/* Print grid */
+	/* Print grid if -p flag is given */
 	if (rank == 0 && prints_enabled == 1) {
 		printGrid(grid, dimension, rank, 1);
 	}
@@ -202,7 +203,7 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 		}
 		MPI_Bcast(&continue_next_gen, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-		//todo make this optional
+		/* Gather grid if -p flag is given */
 		if(prints_enabled == 1){
 			MPI_Gatherv(&(next_local_grid[0][0]), sub_grid_dimension * sub_grid_dimension, MPI_CHAR, ptr_to_grid, sendcounts, displs, block_type_1, 0, MPI_COMM_WORLD);
 		}
@@ -212,7 +213,7 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 		next_local_grid = &(*local_grid);
 		local_grid = temp;
 
-		//todo make this optional
+		/* Print grid if -p flag is given */
 		if (rank == 0 && prints_enabled == 1) {
 			printGrid(grid, dimension, rank, 1);
 		}

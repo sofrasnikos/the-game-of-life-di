@@ -11,24 +11,24 @@
 int createGrid(char ***grid, int dimension) {
 	/* Contiguous memory allocation
 	 * Allocate rows * columns*/
+	int i;
 	char *p = (char *) malloc(dimension * dimension * sizeof(char));
 	if (p == NULL) {
-		free(p);
 		printf("malloc error %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	/* Allocate rows*/
 	(*grid) = (char **) malloc(dimension * sizeof(char*));
-	if (grid == NULL) {
-		free(grid);
+	if ((*grid) == NULL) {
 		printf("malloc error %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	/* Set up the pointers*/
-	for (int i = 0; i < dimension; i++)
+	for (i = 0; i < dimension; i++) {
 		(*grid)[i] = &(p[i * dimension]);
+	}
 
 	return 0;
 }
