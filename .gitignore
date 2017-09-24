@@ -45,3 +45,5 @@ MPI_OpenMP_implementation/game_of_life
 CUDA_implementation/test
 
 CUDA_implementation/game_of_life
+
+CUDA_implementation/out\.txt
