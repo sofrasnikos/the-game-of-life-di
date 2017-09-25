@@ -9,8 +9,7 @@
 
 int createGrid(char **grid, int dimension) {
 	int i;
-	/* Contiguous memory allocation
-	 * Allocate rows * columns*/
+	 /* Allocate 1d array and use it like a 2d */
 	(*grid) = (char *) malloc(dimension * dimension * sizeof(char));
 	if (grid == NULL) {
 		printf("malloc error %s\n", strerror(errno));
@@ -32,7 +31,7 @@ void initGrid(char *grid, int dimension) {
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
 			 * 70% possibility to create empty space*/
-			if (r < 1) {
+			if (r < 10) {
 				grid[i * dimension + j] = 1;
 			} else {
 				grid[i * dimension + j] = 0;
@@ -41,7 +40,7 @@ void initGrid(char *grid, int dimension) {
 	}
 }
 
-void readGrid(char **grid, char *filename, int dimension) {
+void readGrid(char *grid, char *filename, int dimension) {
 	FILE *f;
 	char line[MAXROW + 1];
 	printf("Opening %s...\n", filename);
@@ -63,9 +62,9 @@ void readGrid(char **grid, char *filename, int dimension) {
 		}
 		for (j = 0; j < len; j++) {
 			if (line[j] == '*' || line[j] == '1') {
-				grid[i][j] = 1;
+				grid[i * dimension + j] = 1;
 			} else if (line[j] == '.' || line[j] == '0') {
-				grid[i][j] = 0;
+				grid[i * dimension + j] = 0;
 			} else {
 				printf(
 						"Wrong characters found in %s. Accepted characters are: 01.*\n",
@@ -77,18 +76,14 @@ void readGrid(char **grid, char *filename, int dimension) {
 	}
 }
 
-void printGrid(char **grid, int dimension, int rank, int glob_grid) {
+void printGrid(char *grid, int dimension) {
 	int i, j;
 	char *filename = (char *) malloc(sizeof(char) * 256);
 	struct stat buffer;
 	int exist;
 	i = 0;
 	do {
-		if (glob_grid == 1) {
-			snprintf(filename, 256, "outputs/grid_(%d)", i);
-		} else {
-			snprintf(filename, 256, "outputs/process_%d_(%d)", rank, i);
-		}
+		snprintf(filename, 256, "outputs/grid_(%d)", i);
 		exist = stat(filename, &buffer);
 		if (exist == 0) {
 			i++;
@@ -102,7 +97,7 @@ void printGrid(char **grid, int dimension, int rank, int glob_grid) {
 	}
 	for (i = 0; i < dimension; i++) {
 		for (j = 0; j < dimension; j++) {
-			if (grid[i][j] == 1) {
+			if (grid[i * dimension + j] == 1) {
 				fprintf(fd, "*");
 			} else {
 				fprintf(fd, ".");
