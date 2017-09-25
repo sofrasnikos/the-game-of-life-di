@@ -29,9 +29,10 @@ int execute(int rank, int num_of_proc, int dimension, int sub_grid_dimension,
 	/* Process with rank == 0 creates & initializes the grid*/
 	if (rank == 0) {
 		createGrid(&grid, dimension);
-		initGrid(grid, dimension);
 		if (input_file != NULL) {
 			readGrid(grid, input_file, dimension);
+		} else {
+			initGrid(grid, dimension);
 		}
 		if (prints_enabled == 1) {
 			int dir_stat = mkdir("outputs", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
@@ -490,9 +491,22 @@ void calculateEdgeCells(int sub_grid_dimension, char **local_grid,
 	/* Left neighbor (the value is borrowed by other process) */
 	alive_neighbors += left_buff[sub_grid_dimension - 1];
 	/* If it is empty space */
-	me = next_local_grid[sub_grid_dimension - 1][0];
+	me = local_grid[sub_grid_dimension - 1][0];
 	next_local_grid[sub_grid_dimension - 1][0] = deadOrAlive(alive_neighbors,
 			me);
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	if (k == 19 && rank == 0) {
+		printf("alive_neighbors %d\n", alive_neighbors);
+		printf("Top left neighbor %d\n", left_buff[sub_grid_dimension - 2]);
+		printf("Top %d\n", local_grid[sub_grid_dimension - 2][0]);
+		printf("Top right %d\n", local_grid[sub_grid_dimension - 2][1]);
+		printf("Right %d\n", local_grid[sub_grid_dimension - 1][1]);
+		printf("Bot right %d\n", bot_buff[1]);
+		printf("Bot %d\n", bot_buff[0]);
+		printf("Bot left %d\n", bot_left_value);
+		printf("Left %d\n", left_buff[sub_grid_dimension - 1]);
+	}
 }
 
 int deadOrAlive(int alive_neighbors, int status) {

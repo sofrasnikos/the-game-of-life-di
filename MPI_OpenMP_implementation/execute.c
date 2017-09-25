@@ -459,7 +459,7 @@ void calculateEdgeCells(int sub_grid_dimension, char **local_grid, char **next_l
 	/* Left neighbor (the value is borrowed by other process) */
 	alive_neighbors += left_buff[sub_grid_dimension - 1];
 	/* If it is empty space */
-	me = next_local_grid[sub_grid_dimension - 1][0];
+	me = local_grid[sub_grid_dimension - 1][0];
 	next_local_grid[sub_grid_dimension - 1][0] = deadOrAlive(alive_neighbors, me);
 }
 
