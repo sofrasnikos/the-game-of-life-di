@@ -94,11 +94,10 @@ int main(int argc, char *argv[]) {
 			printf("Error: unknown argument: %s\n", argv[i]);
 			break;
 		}
-		//TODO
 		printf(
-				"\nUSAGE: cuda blahbalbhabba./game_of_life -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
+				"\nUSAGE: ./game_of_life -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
 		printf("\nFLAGS\n");
-		printf("-d <dimension_of_grid> : This flag sets up the size of the grid. If it is not set up, the program will use %d as deafault value.\n",DEFAULT_DIMENSION_SIZE);
+		printf("-d <dimension_of_grid> : This flag sets up the size of the grid. If it is not set up, the program will use %d as deafault value.\n", DEFAULT_DIMENSION_SIZE);
 		printf("-f <input_file> : This flag forces the program to read an initial state of grid from file, and use it as the first generation.\n");
 		printf("-l <number_of_loops> : This flag determines the generations that will be completed.\n");
 		printf("-p : (OPTIONAL FLAG) This flag forces the program to print the generations to output files. ATTENTION! This flag causes major slowdown to the execution!\n");

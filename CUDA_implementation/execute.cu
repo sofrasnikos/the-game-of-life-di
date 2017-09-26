@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include "execute.h"
 
@@ -13,6 +14,10 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 	int i, j, p;
 	int nblocks;
 	char *grid, *gpu_grid_1, *gpu_grid_2;
+	
+	struct timeval t1, t2;
+	gettimeofday(&t1, 0);
+
 	createGrid(&grid, dimension);
 	if (input_file != NULL) {
 		readGrid(grid, input_file, dimension);
@@ -40,6 +45,7 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 		kernel<<<128, (dimension * dimension / 128) + 1>>>(gpu_grid_1, gpu_grid_2, dimension);
 		cudaThreadSynchronize();
 		
+		//todo 8elei optimize auto
 		if (prints_enabled == 1) {
 			cudaMemcpy(grid, gpu_grid_2, dimension * dimension * sizeof(char), cudaMemcpyDeviceToHost);
 			printGrid(grid, dimension);
@@ -51,6 +57,10 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 
 		generation++;
 	}
+
+	gettimeofday(&t2, 0);
+	double time = (1000000.0*(t2.tv_sec-t1.tv_sec) + t2.tv_usec-t1.tv_usec)/1000.0;
+	printf("Time to generate:  %3.1f ms \n", time);
 
 	cudaFree(gpu_grid_1);
 	cudaFree(gpu_grid_2);
