@@ -34,4 +34,11 @@ echo "Processors: 4, Threads: 4, Dimension: 1000x1000, Loops: 1000"
 mpiexec -n 4 -f machines -bind-to socket ../../MPI_OpenMP_implementation/game_of_life -t 4 -d 1000 -l 1000;
 
 
-time elapsed: 3.215046
+reduction
+1.096354
+0.858884
+0.900564
+0.987604
+
+
+no reduction
