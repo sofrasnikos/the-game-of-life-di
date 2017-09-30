@@ -11,7 +11,7 @@ int createGrid(char **grid, int dimension) {
 	int i;
 	 /* Allocate 1d array and use it like a 2d */
 	(*grid) = (char *) malloc(dimension * dimension * sizeof(char));
-	if (grid == NULL) {
+	if ((*grid) == NULL) {
 		printf("malloc error %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
@@ -31,7 +31,7 @@ void initGrid(char *grid, int dimension) {
 			r = rand() % 100 + 1;
 			/* 30% possibility to create a cell
 			 * 70% possibility to create empty space*/
-			if (r < 10) {
+			if (r < 30) {
 				grid[i * dimension + j] = 1;
 			} else {
 				grid[i * dimension + j] = 0;

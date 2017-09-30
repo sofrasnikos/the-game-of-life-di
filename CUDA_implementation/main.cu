@@ -111,6 +111,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	execute(dimension, loops, input_file, prints_enabled);
+	printf("Terminated successfully\n");
 	
 	exit(0);
 }

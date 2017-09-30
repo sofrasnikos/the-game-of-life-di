@@ -10,13 +10,16 @@
 
 #include "execute.h"
 
+/* This variable is used to check if there should be next generation */
+__device__ int diff = 0;
+
 void execute(int dimension, int loops, char *input_file, int prints_enabled) {
-	int i, j, p;
-	int nblocks;
+
+	int local_diff;
 	char *grid, *gpu_grid_1, *gpu_grid_2;
-	
-	struct timeval t1, t2;
-	gettimeofday(&t1, 0);
+
+	struct timeval time_1, time_2;
+	gettimeofday(&time_1, 0);
 
 	createGrid(&grid, dimension);
 	if (input_file != NULL) {
@@ -39,16 +42,39 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 	cudaMemcpy(gpu_grid_1, grid, dimension * dimension * sizeof(char), cudaMemcpyHostToDevice);
 	
 	int generation = 1;
-	int	continue_next_gen = 1;
-	while (/*continue_next_gen == 1 &&*/ generation <= loops){
+	while (generation <= loops) {
+
 		printf("Generation: %d\n", generation);
-		kernel<<<128, (dimension * dimension / 128) + 1>>>(gpu_grid_1, gpu_grid_2, dimension);
+		
+		local_diff = 0;
+		cudaMemcpyToSymbol(diff, &local_diff,sizeof(int), 0, cudaMemcpyHostToDevice);
+
+		/* Kernel invocation */
+		dim3 dimBlock(16, 16);
+		dim3 dimGrid;
+		dimGrid.x = (dimension + dimBlock.x - 1) / dimBlock.x;
+		dimGrid.y = (dimension + dimBlock.y - 1) / dimBlock.y;
+
+		kernel<<<dimGrid, dimBlock>>>(gpu_grid_1, gpu_grid_2, dimension);
+		if (cudaGetLastError() != cudaSuccess) {
+			printf("kernel launch failed\n");
+		}
 		cudaThreadSynchronize();
 		
 		//todo 8elei optimize auto
 		if (prints_enabled == 1) {
 			cudaMemcpy(grid, gpu_grid_2, dimension * dimension * sizeof(char), cudaMemcpyDeviceToHost);
 			printGrid(grid, dimension);
+		}
+
+		cudaMemcpyFromSymbol(&local_diff, diff, sizeof(int), 0, cudaMemcpyDeviceToHost);
+
+		// printf("local_diff %d\n", local_diff);
+
+		/* If there are no differences between two generations
+		 * OR if the next generation is 0*/
+		if(local_diff == 0) {
+			break;
 		}
 
 		char *temp = gpu_grid_1;
@@ -58,18 +84,18 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 		generation++;
 	}
 
-	gettimeofday(&t2, 0);
-	double time = (1000000.0*(t2.tv_sec-t1.tv_sec) + t2.tv_usec-t1.tv_usec)/1000.0;
-	printf("Time to generate:  %3.1f ms \n", time);
+	gettimeofday(&time_2, 0);
+	double time = (1000000.0 * (time_2.tv_sec - time_1.tv_sec) + time_2.tv_usec - time_1.tv_usec) / 1000000;
+	printf("time elapsed: %lf\n", time);
 
 	cudaFree(gpu_grid_1);
 	cudaFree(gpu_grid_2);
 	freeGrid(&grid);
-	printf("Exiting...\n");
 }
 
 __global__ void kernel(char *grid_1, char *grid_2, int dimension) {
 
+	/* The variables below are used to iterate the grid */
 	int ix = (blockIdx.x * blockDim.x + threadIdx.x) % (dimension * dimension);
 	int iy = (blockIdx.y * blockDim.y + threadIdx.y) % (dimension * dimension);
 	int idx	= (iy * dimension + ix) % (dimension * dimension);
@@ -103,6 +129,8 @@ __global__ void kernel(char *grid_1, char *grid_2, int dimension) {
 	alive_neighbors += grid_1[bot_left];
 	alive_neighbors += grid_1[left];
 
+
+
 	// printf("idx = %d i = %d j = %d\n", idx, i ,j);
 
 	// if (i == 5 && j == 5){
@@ -118,9 +146,8 @@ __global__ void kernel(char *grid_1, char *grid_2, int dimension) {
 	//  	printf("left: %d\n", left);
 	// }
 	// grid_2[i * dimension + j] = deadOrAlive(alive_neighbors, grid_1[i * dimension + j]);
-	int pos = i * dimension + j;
-	int status = grid_1[idx];
 
+	int status = grid_1[idx];
 	// printf("status %d\n", grid_1[idx]);
 
 	if (status == 0) {
@@ -146,6 +173,14 @@ __global__ void kernel(char *grid_1, char *grid_2, int dimension) {
 			grid_2[idx] = 1;
 		}
 	}
+
+	if (grid_1[idx] != grid_2[idx] || grid_2[idx] != 0) {
+		/* We don't care about race conditions, we only check if it is different than 0 */
+		// printf("before %d\n", diff);
+		diff += 1;
+		// printf("after %d\n", diff);
+	}
+
 
 
 	// clock_t start = clock();
