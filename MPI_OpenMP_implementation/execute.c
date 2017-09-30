@@ -39,8 +39,8 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 				printf("mkdir error %s\n", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
+			printf("block size: %d\n", sub_grid_dimension);
 		}
-		printf("block size: %d\n", sub_grid_dimension);
 	}
 
 	/* Create a zero array to compare if a local grid has only 0 */
@@ -143,7 +143,7 @@ int execute(int rank, int num_of_proc, int num_of_threads, int dimension, int su
 	int generation = 1;
 	continue_next_gen = 1;
 	while (continue_next_gen == 1 && generation <= loops) {
-		if (rank == 0) {
+		if (rank == 0 && prints_enabled == 1) {
 			printf("Generation: %d\n", generation);
 		}
 		// Send to all eight neighbors

@@ -10,9 +10,6 @@
 
 int main(int argc, char *argv[]) {
 
-	// clock_t start, end;
-	// double cpu_time_used;
-	// start = clock();
 	srand(time(NULL));
 
 	int i;
@@ -21,9 +18,8 @@ int main(int argc, char *argv[]) {
 	int prints_enabled = 0;
 	char *input_file = NULL;
 	int error = 0;
-
 	int provided;
-	// MPI_Init(&argc, &argv);
+
 	MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &provided);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
@@ -138,10 +134,7 @@ int main(int argc, char *argv[]) {
 			printf("-f <input_file> : This flag forces the program to read an initial state of grid from file, and use it as the first generation.\n");
 			printf("-l <number_of_loops> : This flag determines the generations that will be completed.\n");
 			printf("-p : (OPTIONAL FLAG) This flag forces the program to print the generations to output files. ATTENTION! This flag causes major slowdown to the execution!\n");
-		} else {
-			printf("dimension size: %d\n", dimension);
-			printf("number of loops: %d\n", loops);
-		}
+		} 
 	}
 	if (error != 0) {
 		MPI_Finalize();
@@ -165,12 +158,14 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
+	if (prints_enabled) {
+			printf("dimension size: %d\n", dimension);
+			printf("number of loops: %d\n", loops);
+	}
+
 	execute(rank, num_of_proc, num_of_threads, dimension, sub_grid_size, loops, input_file, prints_enabled);
 
-	
 	if (rank == 0) {
-		// end = clock();
-		// cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 		double time = omp_get_wtime() - start_time;
 		printf("time elapsed: %lf\n", time);
 		printf("Terminated successfully\n");
