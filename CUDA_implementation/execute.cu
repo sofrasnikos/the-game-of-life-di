@@ -40,22 +40,23 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 	cudaMalloc((void **) &gpu_grid_1, dimension * dimension * sizeof(char));
 	cudaMalloc((void **) &gpu_grid_2, dimension * dimension * sizeof(char));
 	cudaMemcpy(gpu_grid_1, grid, dimension * dimension * sizeof(char), cudaMemcpyHostToDevice);
-	
+
+	/* Kernel invocation */
+	dim3 dimBlock(16, 16);
+	dim3 dimGrid;
+	dimGrid.x = (dimension + dimBlock.x - 1) / dimBlock.x;
+	dimGrid.y = (dimension + dimBlock.y - 1) / dimBlock.y;
+
 	int generation = 1;
 	while (generation <= loops) {
-
-		printf("Generation: %d\n", generation);
-		
+		if (prints_enabled == 1) {
+			printf("Generation: %d\n", generation);
+		}
 		local_diff = 0;
 		cudaMemcpyToSymbol(diff, &local_diff,sizeof(int), 0, cudaMemcpyHostToDevice);
 
-		/* Kernel invocation */
-		dim3 dimBlock(16, 16);
-		dim3 dimGrid;
-		dimGrid.x = (dimension + dimBlock.x - 1) / dimBlock.x;
-		dimGrid.y = (dimension + dimBlock.y - 1) / dimBlock.y;
-
 		kernel<<<dimGrid, dimBlock>>>(gpu_grid_1, gpu_grid_2, dimension);
+
 		if (cudaGetLastError() != cudaSuccess) {
 			printf("kernel launch failed\n");
 		}
@@ -72,7 +73,7 @@ void execute(int dimension, int loops, char *input_file, int prints_enabled) {
 		// printf("local_diff %d\n", local_diff);
 
 		/* If there are no differences between two generations
-		 * OR if the next generation is 0*/
+		 * OR if the next generation is 0 */
 		if(local_diff == 0) {
 			break;
 		}
@@ -129,24 +130,6 @@ __global__ void kernel(char *grid_1, char *grid_2, int dimension) {
 	alive_neighbors += grid_1[bot_left];
 	alive_neighbors += grid_1[left];
 
-
-
-	// printf("idx = %d i = %d j = %d\n", idx, i ,j);
-
-	// if (i == 5 && j == 5){
-		
-	// 	printf("alive alive_neighbors: %d\n", alive_neighbors);
-	// 	printf("top: %d\n", top);
-	// 	printf("top_right: %d\n", top_right);
-	// 	printf("top_left: %d\n", top_left);
-	//  	printf("bot: %d\n", bot);
-	//  	printf("bot_right: %d\n", bot_right);
-	//  	printf("bot_left: %d\n", bot_left);
-	//  	printf("right: %d\n", right);
-	//  	printf("left: %d\n", left);
-	// }
-	// grid_2[i * dimension + j] = deadOrAlive(alive_neighbors, grid_1[i * dimension + j]);
-
 	int status = grid_1[idx];
 	// printf("status %d\n", grid_1[idx]);
 
@@ -174,25 +157,10 @@ __global__ void kernel(char *grid_1, char *grid_2, int dimension) {
 		}
 	}
 
-	if (grid_1[idx] != grid_2[idx] || grid_2[idx] != 0) {
-		/* We don't care about race conditions, we only check if it is different than 0 */
-		// printf("before %d\n", diff);
-		diff += 1;
-		// printf("after %d\n", diff);
+	/* We don't care about race conditions, we only check if it is different than 0 */
+	if (grid_1[idx] != grid_2[idx]) {
+		if(grid_2[idx] != 0){
+			diff += 1;
+		}
 	}
-
-
-
-	// clock_t start = clock();
-	// clock_t now;
-	// for (;;) {
-	// 	  now = clock();
-	// 	  clock_t cycles = now > start ? now - start : now + (0xffffffff - start);
-	// 	  if (cycles >= 10000) {
-	// 	    break;
-	// 	  }
-	// }
-	// if (grid_2[idx] == 0) {
-
-	// }
 }
