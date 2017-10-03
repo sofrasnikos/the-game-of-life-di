@@ -158,9 +158,9 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	if (prints_enabled) {
-			printf("dimension size: %d\n", dimension);
-			printf("number of loops: %d\n", loops);
+	if (prints_enabled == 1 && rank == 0) {
+		printf("dimension size: %d\n", dimension);
+		printf("number of loops: %d\n", loops);
 	}
 
 	execute(rank, num_of_proc, num_of_threads, dimension, sub_grid_size, loops, input_file, prints_enabled);

@@ -133,16 +133,16 @@ int main(int argc, char *argv[]) {
 		exit(0);
 	}
 
-	if (prints_enabled) {
-			printf("dimension size: %d\n", dimension);
-			printf("number of loops: %d\n", loops);
+	if (prints_enabled == 1 && rank == 0) {
+		printf("dimension size: %d\n", dimension);
+		printf("number of loops: %d\n", loops);
 	}
 
 	execute(rank, num_of_proc, dimension, sub_grid_size, loops, input_file, prints_enabled);
 
 	if (rank == 0) {
 		double time = MPI_Wtime() - start_time;
-		printf("time elapsed: %lf\n", time);
+		printf("time elapsed: %lf seconds\n", time);
 		printf("Terminated successfully\n");
 	}
 
