@@ -244,7 +244,7 @@ void calculateInnerCells(int sub_grid_dimension, char **local_grid, char **next_
 	int alive_neighbors;
 	int pid = getpid();
 	omp_set_num_threads(num_of_threads);
-	#pragma omp parallel for shared (sub_grid_dimension, next_local_grid, local_grid) private(i, j, alive_neighbors, me) /*reduction(+:alive_neighbors)*/
+	#pragma omp parallel for shared (sub_grid_dimension, next_local_grid, local_grid) private(i, j, me) reduction(+:alive_neighbors)
 	for (i = 1; i < sub_grid_dimension - 1; i++) {
 		// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", i, tid, total, pid);
 		/* Ignore the first column (j == 0) and the last column (j == sub_grid_dimension - 1) */
@@ -280,7 +280,7 @@ void calculateEdgeCells(int sub_grid_dimension, char **local_grid, char **next_l
 	int me;
 	int pid = getpid();
 	omp_set_num_threads(num_of_threads);
-	#pragma omp parallel for shared (sub_grid_dimension, next_local_grid, local_grid, top_buff, bot_buff, left_buff, right_buff) private(k, alive_neighbors, me) /*reduction(+:alive_neighbors)*/
+	#pragma omp parallel for shared (sub_grid_dimension, next_local_grid, local_grid, top_buff, bot_buff, left_buff, right_buff) private(k, me) reduction(+:alive_neighbors)
 	for (k = 1; k < sub_grid_dimension - 1; k++) {
 		// printf("Iteration %d is assigned to thread %d of %d. pid master: %d\n", k, tid, total, pid);
 		/* TOP ROW */
