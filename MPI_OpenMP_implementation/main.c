@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 				break;
 			}
 			printf(
-					"\nUSAGE: mpirun -np <number_of_processes> ./game_of_life -t <number_of_threads> -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
+					"\nUSAGE: mpiexec -f <machine_file> -p <number_of_processes> -bind-to core ./game_of_life -t <number_of_threads> -d <dimension_of_grid> -f <input_file> -l <number_of_loops> -p\n");
 			printf("\nFLAGS\n");
 			printf("-t <number_of_threads> : This flag defines the number of threads that the program will use. If it is not set up the program will use %d threads\n", NUM_OF_THREADS);
 			printf("-d <dimension_of_grid> : This flag sets up the size of the grid. If it is not set up, the program will use %d as deafault value.\n", DEFAULT_DIMENSION_SIZE);
@@ -167,13 +167,10 @@ int main(int argc, char *argv[]) {
 
 	if (rank == 0) {
 		double time = omp_get_wtime() - start_time;
-		printf("time elapsed: %lf\n", time);
+		printf("time elapsed: %lf\n seconds", time);
 		printf("Terminated successfully\n");
 	}
 	
 	MPI_Finalize();
 	exit(0);
 }
-
-//TODO o parser 8elei patch. otan exeis kati tou tupou "-d -l 1000" vgazei Error: wrong dimension size
-
