@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 	int error = 0;
 	int provided;
 
-	MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
 
@@ -167,7 +167,7 @@ int main(int argc, char *argv[]) {
 
 	if (rank == 0) {
 		double time = omp_get_wtime() - start_time;
-		printf("time elapsed: %lf\n seconds", time);
+		printf("time elapsed: %lf seconds\n", time);
 		printf("Terminated successfully\n");
 	}
 	
