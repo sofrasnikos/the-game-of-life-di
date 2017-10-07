@@ -20,7 +20,12 @@ int main(int argc, char *argv[]) {
 	int error = 0;
 	int provided;
 
-	MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+	MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+	if (provided < MPI_THREAD_FUNNELED) {
+		printf("Error: MPI does not provide the required thread support\n");
+    	MPI_Abort(MPI_COMM_WORLD, 1);
+    	exit(1);
+	}
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	MPI_Comm_size(MPI_COMM_WORLD, &num_of_proc);
 
