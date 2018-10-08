@@ -1,6 +1,6 @@
 # A Parallel Implementation for Conway's Game of Life
 
-Copyright (C) 2018 Vangelis Tsiatouras
+Copyright (C) 2018 Vangelis Tsiatouras & Nick Sofras
 
 ## About
 
